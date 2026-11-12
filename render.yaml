@@ -1,0 +1,22 @@
+# Configuração do DataDice no Render (Blueprint). Ao criar pelo Render, tudo abaixo vem preenchido;
+# os campos com "sync: false" são pedidos na tela (cole os valores lá, nunca no código).
+services:
+  - type: web
+    name: datadice
+    runtime: docker
+    plan: free
+    # Perto do banco (Neon em AWS US East, N. Virginia): o que mais pesa na velocidade é servidor e banco juntos.
+    region: virginia
+    healthCheckPath: /healthz
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: REGISTRATION_CODE
+        sync: false
+      # Gerado pelo próprio Render (aleatório e secreto).
+      - key: JWT_SECRET
+        generateValue: true
+      - key: TRUST_PROXY
+        value: "1"
+      - key: DATABASE_POOL_SIZE
+        value: "5"
