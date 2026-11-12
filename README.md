@@ -50,7 +50,9 @@ Caminho sugerido para o Beta:
 1. **Código no GitHub:** crie um repositório **privado** só com a pasta do projeto. O `.gitignore` já deixa de fora `.env`, `data/`, `node_modules/` e as imagens locais. Antes do primeiro envio, confira com `git status` que nenhum `.env` aparece.
 2. **Banco:** crie um PostgreSQL gerenciado (ex.: Neon ou Supabase) e copie a URL de conexão, com `?sslmode=require` no final.
 3. **Servidor:** num serviço que roda Docker a partir do GitHub (ex.: Render ou Railway), crie um serviço web com o repositório e as variáveis abaixo. Health check: `/healthz`. Use **uma instância só** (veja "Mesas em tempo real" abaixo).
-4. **Seus dados:** para levar as campanhas deste computador, rode `npm run db:import` com `DATABASE_URL` apontando para o banco novo (ainda vazio).
+4. **Seus dados:** coloque a URL do banco novo (vazio) em `CLOUD_DATABASE_URL` no `.env` e rode `powershell -ExecutionPolicy Bypass -File scriptscopiar-para-nuvem.ps1`. O script copia tudo (contas, fichas, campanhas, mesas, modelos, imagens e livros de regras), confere as contagens dos dois lados e recusa copiar por cima de dados.
+
+**Neon:** use a conexão **direta** (sem `-pooler` no endereço): o DataDice manda configurações na conexão que o modo "pooled" não aceita. No plano grátis, use `DATABASE_POOL_SIZE=5`.
 5. **Conta admin:** na primeira vez, defina `ADMIN_EMAIL`, `ADMIN_PASSWORD` e `ADMIN_NAME`; depois que entrar, apague `ADMIN_PASSWORD` das variáveis.
 6. **Domínio (depois):** com um domínio próprio, aponte-o para o serviço; o Cloudflare pode ficar na frente como proxy (veja abaixo).
 
