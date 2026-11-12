@@ -1,0 +1,415 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DataDice</title>
+  <link rel="icon" type="image/png" href="img/favicon.png">
+  <link rel="stylesheet" href="css/style.css?v=20261112b">
+</head>
+<body data-auth="loading">
+  <section id="auth-screen" class="auth-screen" hidden>
+    <div class="auth-box">
+      <div class="auth-brand">
+        <img src="img/logo.png" alt="">
+        <h1><strong>Data<span>Dice</span></strong></h1>
+        <p class="muted">Seu Mestre de RPG com inteligência artificial.</p>
+        <span class="beta-badge">Beta</span>
+      </div>
+      <div class="auth-switch" role="tablist" aria-label="Entrar ou criar conta">
+        <button type="button" role="tab" id="auth-tab-login" class="active" aria-selected="true">Entrar</button>
+        <button type="button" role="tab" id="auth-tab-register" aria-selected="false">Criar conta</button>
+      </div>
+      <form id="auth-form" class="stack" novalidate>
+        <label id="auth-name-field" hidden>Nome <input name="name" autocomplete="name" maxlength="60"></label>
+        <label>E-mail <input name="email" type="email" autocomplete="email" inputmode="email" required maxlength="254"></label>
+        <div>
+          <label for="auth-password">Senha</label>
+          <div class="password-field">
+            <input id="auth-password" name="password" type="password" autocomplete="current-password" required minlength="8" maxlength="72">
+            <button type="button" class="eye-toggle" id="auth-password-toggle" aria-pressed="false" aria-controls="auth-password" aria-label="Mostrar senha" title="Mostrar senha">
+              <svg class="eye-open" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+              <svg class="eye-closed" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M10.6 5.1A10.7 10.7 0 0 1 12 5c6.4 0 10 7 10 7a17.6 17.6 0 0 1-2.9 3.9M6.6 6.6A17.4 17.4 0 0 0 2 12s3.6 7 10 7a9.7 9.7 0 0 0 5.4-1.6"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/><path d="m3 3 18 18"/></svg>
+            </button>
+          </div>
+        </div>
+        <label id="auth-code-field" hidden>Código de convite <input name="code" autocomplete="off" maxlength="100"></label>
+        <p id="auth-hint" class="muted small-print" hidden>A senha precisa ter pelo menos 8 caracteres.</p>
+        <button class="primary big" id="auth-submit" type="submit">Entrar</button>
+        <p id="auth-error" class="error" role="alert" hidden></p>
+      </form>
+    </div>
+  </section>
+
+  <header class="topbar">
+    <h1><img src="img/logo.png" alt=""><strong>Data<span>Dice</span></strong></h1>
+    <div class="topbar-user">
+      <span id="user-name" class="user-name"></span>
+      <button type="button" id="tours-open" class="icon-button" aria-label="Treinamentos" title="Treinamentos"><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3M12 17h.01"/></svg></button>
+      <button type="button" id="settings-open" class="icon-button" aria-label="Configurações" title="Configurações">
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M19.4 13a7.6 7.6 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a7.4 7.4 0 0 0-1.7-1l-.4-2.6h-4l-.4 2.6a7.4 7.4 0 0 0-1.7 1l-2.5-1-2 3.5L4.6 11a7.6 7.6 0 0 0 0 2l-2.1 1.6 2 3.5 2.5-1a7.4 7.4 0 0 0 1.7 1l.4 2.6h4l.4-2.6a7.4 7.4 0 0 0 1.7-1l2.5 1 2-3.5L19.4 13ZM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Z"/></svg>
+      </button>
+      <button type="button" id="logout" class="small">Sair</button>
+    </div>
+    <div id="mode-switch" class="mode-switch-top" role="group" aria-label="Tipo de jogo">
+      <button type="button" data-mode="ia" aria-pressed="false"><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="8" width="18" height="12" rx="2"/><path d="M12 8V4M8 13h.01M16 13h.01M9 17h6"/></svg> Mestre IA</button>
+      <button type="button" data-mode="mesa" aria-pressed="false"><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8" cy="8" r="1.4" fill="currentColor"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/><circle cx="16" cy="16" r="1.4" fill="currentColor"/></svg> Mesas com amigos <span id="mode-badge" class="tab-badge" hidden></span></button>
+    </div>
+    <nav aria-label="Seções">
+      <button class="tab" data-view="game" data-mode="ia">Jogo</button>
+      <button class="tab" data-view="tables" data-mode="mesa">Mesas <span id="tables-badge" class="tab-badge" hidden></span></button>
+      <button class="tab" data-view="templates" data-mode="mesa">Modelos</button>
+      <button class="tab" data-view="characters">Personagens</button>
+      <button class="tab" data-view="campaigns" data-mode="ia">Campanhas</button>
+      <button class="tab" data-view="library" data-mode="ia">Biblioteca</button>
+      <button class="tab" data-view="usage" data-mode="ia">Consumo IA</button>
+      <button type="button" class="tab admin-tab" id="admin-menu-button" data-admin hidden aria-haspopup="menu" aria-expanded="false" aria-controls="admin-menu">
+        Admin <span class="caret" aria-hidden="true">▾</span>
+      </button>
+    </nav>
+  </header>
+
+  <div id="admin-menu" class="admin-menu" role="menu" aria-label="Admin" hidden>
+    <button type="button" role="menuitem" class="menu-item" data-view="notebook">
+      <span class="menu-icon"><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span><span><strong>Caderno do Mestre</strong><small>Memórias e crônica das campanhas</small></span>
+    </button>
+    <button type="button" role="menuitem" class="menu-item" data-view="metrics">
+      <span class="menu-icon"><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><path d="M7 15v3M12 10v8M17 6v12"/></svg></span><span><strong>Métricas de Tokens</strong><small>Consumo de todo o sistema</small></span>
+    </button>
+    <button type="button" role="menuitem" class="menu-item" data-view="admin">
+      <span class="menu-icon"><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span><span><strong>Painel Admin</strong><small>Contas e relatório geral</small></span>
+    </button>
+  </div>
+
+  <dialog id="tours-dialog" class="settings-dialog tours-dialog" aria-labelledby="tours-title">
+    <form method="dialog" class="settings-head">
+      <h2 id="tours-title">Treinamentos</h2>
+      <button class="icon-button" value="close" aria-label="Fechar">✕</button>
+    </form>
+    <p class="muted">Tours curtos que navegam pelo DataDice e explicam cada parte. Nada é criado nem apagado. Saia quando quiser com "Sair" ou Esc.</p>
+    <ul id="tours-list" class="tours-list"></ul>
+  </dialog>
+
+  <dialog id="settings-dialog" class="settings-dialog" aria-labelledby="settings-title">
+    <form method="dialog" class="settings-head">
+      <h2 id="settings-title">Configurações</h2>
+      <button class="icon-button" value="close" aria-label="Fechar">✕</button>
+    </form>
+    <section class="settings-section">
+      <h3><label for="settings-key">Chave do Gemini</label></h3>
+      <div class="password-field">
+        <input id="settings-key" type="password" autocomplete="off" spellcheck="false" placeholder="Cole aqui sua chave">
+        <button type="button" class="eye-toggle" id="settings-key-toggle" aria-pressed="false" aria-controls="settings-key" aria-label="Mostrar chave" title="Mostrar chave">
+              <svg class="eye-open" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+              <svg class="eye-closed" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M10.6 5.1A10.7 10.7 0 0 1 12 5c6.4 0 10 7 10 7a17.6 17.6 0 0 1-2.9 3.9M6.6 6.6A17.4 17.4 0 0 0 2 12s3.6 7 10 7a9.7 9.7 0 0 0 5.4-1.6"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/><path d="m3 3 18 18"/></svg>
+            </button>
+      </div>
+      <div class="settings-actions">
+        <button type="button" id="settings-test" class="primary">Testar conexão</button>
+        <a class="button" href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer">Obter chave gratuita no Google ↗</a>
+      </div>
+      <p id="settings-status" class="key-status" role="status" hidden></p>
+      <details class="more">
+        <summary>Saiba mais</summary>
+        <ul>
+          <li>O Mestre usa a inteligência artificial do Google com a <strong>sua</strong> chave.</li>
+          <li>A chave fica salva só neste navegador e é usada apenas para falar com o Gemini. O servidor não a guarda.</li>
+          <li>O plano gratuito tem um limite de pedidos por dia, que volta por volta das 5h (horário de Brasília).</li>
+        </ul>
+      </details>
+    </section>
+    <section class="settings-section">
+      <h3>Imagens</h3>
+      <label class="switch">
+        <input id="settings-images" type="checkbox" role="switch">
+        <span class="switch-track" aria-hidden="true"></span>
+        <span>Gerar Ilustrações de Cenas e NPCs via Gemini</span>
+      </label>
+      <p class="muted small-print">Precisa de faturamento ativo na chave.</p>
+      <details class="more">
+        <summary>Saiba mais</summary>
+        <ul>
+          <li>O plano gratuito do Gemini <strong>não inclui imagens</strong>.</li>
+          <li>Com faturamento ativo, cada imagem custa cerca de US$ 0,03.</li>
+          <li>Desligado, o Mestre narra só em texto e sua chave gasta menos.</li>
+        </ul>
+      </details>
+    </section>
+  </dialog>
+
+  <main>
+    <section id="view-game" class="view game-layout" hidden>
+      <button type="button" id="jump-dice" class="jump-fab" hidden>
+        <span id="jump-dice-icon"><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8" cy="8" r="1.4" fill="currentColor"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/><circle cx="16" cy="16" r="1.4" fill="currentColor"/></svg></span> <span id="jump-dice-label">Dados</span>
+      </button>
+      <div class="chat-panel">
+        <div id="chat-log" class="chat-log" aria-live="polite"></div>
+        <div id="session-gate" class="session-gate" hidden></div>
+        <form id="chat-form" class="chat-form">
+          <textarea id="chat-input" rows="2" maxlength="4000" placeholder="O que você faz?" aria-label="Sua ação"></textarea>
+          <button class="primary" id="chat-send" type="submit">Enviar</button>
+        </form>
+        <p id="chat-error" class="error" role="alert" hidden></p>
+      </div>
+      <aside class="side-panel">
+        <div class="card">
+          <label>Campanha <select id="game-campaign"></select></label>
+          <label>Personagem <select id="game-character"></select></label>
+          <button id="game-join" type="button" hidden>Entrar na campanha</button>
+        </div>
+        <div id="member-panel"></div>
+      </aside>
+    </section>
+
+    <section id="view-characters" class="view" hidden>
+      <div class="section-head">
+        <h2 id="roster-title">Seus personagens</h2>
+        <div class="roster-tools">
+          <input id="character-filter" type="search" placeholder="Buscar personagem" aria-label="Buscar por nome, raça ou classe" hidden>
+          <button type="button" class="primary" id="character-new">Novo personagem</button>
+        </div>
+      </div>
+      <p id="table-return" class="draft-note" hidden>
+        <span id="table-return-text">Criando uma ficha para a sua mesa. Depois de salvar, volte por aqui.</span>
+        <button type="button" id="table-return-button" class="small">Voltar para a mesa</button>
+      </p>
+      <div id="character-roster" class="roster scroll-list"></div>
+      <h2 id="sheet-title">Novo personagem</h2>
+      <form id="character-form"></form>
+    </section>
+
+    <section id="view-campaigns" class="view" hidden>
+      <div class="section-head">
+        <h2 id="campaign-list-title">Suas campanhas</h2>
+        <button type="button" class="primary" id="campaign-new">Nova campanha</button>
+      </div>
+      <div id="campaign-list" class="campaign-grid scroll-list"></div>
+
+      <div id="campaign-editor" class="campaign-editor" hidden>
+      <div class="editor-head">
+      <h2 id="campaign-form-title">Nova campanha</h2>
+      <button type="button" id="campaign-close" class="icon-button" aria-label="Fechar">✕</button>
+      </div>
+      <div id="campaign-mode" class="segmented" role="tablist" aria-label="Como criar a campanha">
+        <button type="button" role="tab" data-mode="ai" class="active" aria-selected="true">Criar com IA</button>
+        <button type="button" role="tab" data-mode="manual" aria-selected="false">Escrever do zero</button>
+      </div>
+
+      <div id="campaign-ai" class="card stack">
+        <div>
+          <h3>1. Escolha um tema</h3>
+          <div id="campaign-themes" class="theme-grid" role="radiogroup" aria-label="Tema da campanha"></div>
+        </div>
+        <div class="choice-row">
+          <div>
+            <h3>2. Tom</h3>
+            <div id="campaign-tone" class="segmented small-seg" role="radiogroup" aria-label="Tom">
+              <button type="button" role="radio" data-value="leve" aria-checked="false">Leve</button>
+              <button type="button" role="radio" data-value="equilibrado" class="active" aria-checked="true">Equilibrado</button>
+              <button type="button" role="radio" data-value="sombrio" aria-checked="false">Sombrio</button>
+            </div>
+          </div>
+          <div>
+            <h3>3. Duração</h3>
+            <div id="campaign-length" class="segmented small-seg" role="radiogroup" aria-label="Duração">
+              <button type="button" role="radio" data-value="curta" aria-checked="false">Aventura curta</button>
+              <button type="button" role="radio" data-value="longa" class="active" aria-checked="true">Campanha longa</button>
+            </div>
+          </div>
+        </div>
+        <label>Alguma ideia? <span class="optional">(opcional)</span>
+          <textarea id="campaign-idea" rows="2" maxlength="500" placeholder="Ex.: quero um dragão que na verdade é o bonzinho da história"></textarea>
+        </label>
+        <button type="button" id="campaign-generate" class="primary big">Gerar campanha com IA</button>
+        <div id="campaign-generating" class="generating" role="status" hidden>
+          <div class="spinner"></div>
+          <span>O Mestre está criando o seu mundo...</span>
+        </div>
+        <p id="campaign-ai-error" class="error" role="alert" hidden></p>
+      </div>
+
+      <form id="campaign-form" class="card stack" hidden>
+        <p id="campaign-draft-note" class="draft-note" hidden>
+          <span>Pronto! Revise e ajuste o que quiser, depois clique em <strong>Criar campanha</strong>.</span>
+          <button type="button" id="campaign-regenerate" class="small">Gerar outra versão</button>
+        </p>
+        <label>Nome <input name="name" required maxlength="100" placeholder="Ex.: As Brumas de Valdoria"></label>
+        <label>Descrição do mundo <textarea name="world_description" rows="8" placeholder="Cenário, tom, história, locais importantes..."></textarea></label>
+        <label>Instruções para o Mestre <span class="optional">(opcional)</span> <textarea name="system_prompt" rows="3" placeholder="Ex.: campanha sombria, combates difíceis, sem conteúdo adulto."></textarea></label>
+        <div class="row">
+          <button class="primary" id="campaign-submit" type="submit">Criar campanha</button>
+          <button type="button" id="campaign-cancel" hidden>Cancelar</button>
+        </div>
+        <p id="campaign-error" class="error" role="alert" hidden></p>
+      </form>
+      </div>
+    </section>
+
+    <section id="view-tables" class="view" hidden>
+      <div id="tables-home">
+        <div id="tables-list-head" class="section-head" hidden>
+          <h2>Suas mesas</h2>
+          <div class="row">
+            <button type="button" id="table-join-open">Entrar com código</button>
+            <button type="button" class="primary" id="table-new">Criar mesa</button>
+          </div>
+        </div>
+        <p id="tables-notice" class="draft-note" role="status" hidden></p>
+        <p id="tables-error" class="error" role="alert" hidden></p>
+
+        <form id="table-create-form" class="campaign-editor stack" hidden>
+          <div class="editor-head">
+            <h2>Criar mesa</h2>
+            <button type="button" id="table-create-cancel" class="icon-button" aria-label="Fechar">✕</button>
+          </div>
+          <p class="muted">Você será o Mestre. Depois de criar, você recebe um código para convidar até 6 jogadores.</p>
+          <label>Nome da mesa <input name="name" required maxlength="100" placeholder="Ex.: Mesa de sexta"></label>
+          <label>Descrição para os jogadores <span class="optional">(opcional)</span>
+            <textarea name="description" rows="4" maxlength="4000" placeholder="Cenário, dia e horário das sessões, regras da casa..."></textarea>
+          </label>
+          <button class="primary big" type="submit">Criar mesa</button>
+          <p id="table-create-error" class="error" role="alert" hidden></p>
+        </form>
+
+        <form id="table-join-form" class="campaign-editor stack" hidden>
+          <div class="editor-head">
+            <h2>Entrar numa mesa</h2>
+            <button type="button" id="table-join-cancel" class="icon-button" aria-label="Fechar">✕</button>
+          </div>
+          <p class="muted">Peça o código ao Mestre da mesa. Depois de enviar, o Mestre precisa aprovar sua entrada.</p>
+          <label>Código da mesa
+            <input name="code" required maxlength="20" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Ex.: K7QF-M2XA" class="code-input">
+          </label>
+          <button class="primary big" type="submit">Pedir para entrar</button>
+          <p id="table-join-error" class="error" role="alert" hidden></p>
+        </form>
+
+        <div id="table-list" class="campaign-grid"></div>
+
+      </div>
+
+      <div id="table-detail" hidden>
+        <div class="table-detail-head table-room-head">
+          <button type="button" id="table-back" class="icon-button table-back" aria-label="Voltar para a lista de mesas" title="Voltar para Mesas"><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></button>
+          <div class="table-room-title">
+            <h2 id="table-detail-title"></h2>
+            <p class="table-room-meta"><span id="table-detail-sub" class="chip"></span> <span id="tp-live" class="tp-live" aria-live="polite"></span></p>
+          </div>
+        </div>
+        <nav id="table-tabs" class="table-tabs" role="tablist" aria-label="Partes da mesa"></nav>
+        <p id="table-error" class="error" role="alert" hidden></p>
+        <div id="table-pane-chat" class="table-pane tp-chat-pane" data-pane="chat"></div>
+        <div id="table-pane-sheet" class="table-pane" data-pane="sheet" hidden></div>
+        <div id="table-pane-panel" class="table-pane" data-pane="panel" hidden></div>
+        <div id="table-pane-library" class="table-pane" data-pane="library" hidden></div>
+        <div id="table-pane-notes" class="table-pane" data-pane="notes" hidden></div>
+        <div id="table-sections" class="table-sections table-pane" data-pane="mesa" hidden></div>
+      </div>
+    </section>
+
+    <section id="view-templates" class="view" hidden>
+      <div id="templates-view">
+        <div class="section-head templates-head">
+          <div>
+            <h2>Meus modelos</h2>
+            <p class="muted">NPCs, monstros e locais guardados na sua conta, para usar em qualquer mesa (na Biblioteca da mesa, "Começar de um modelo").</p>
+          </div>
+          <button type="button" class="primary" id="template-new">+ Novo modelo</button>
+        </div>
+        <p id="templates-error" class="error" role="alert" hidden></p>
+        <div id="templates-filters" class="library-filters templates-filters" role="group" aria-label="Filtrar"></div>
+        <div id="templates-form" hidden></div>
+        <div id="templates-list" class="tp-library-list"></div>
+      </div>
+    </section>
+
+    <section id="view-notebook" class="view" hidden>
+      <div class="section-head">
+        <div>
+          <h2>Caderno do Mestre</h2>
+          <label class="inline">Campanha <select id="notebook-campaign"></select></label>
+        </div>
+        <input id="notebook-filter" type="search" placeholder="Filtrar memórias" aria-label="Filtrar memórias">
+      </div>
+      <div class="notebook-layout">
+        <form id="memory-form" class="card stack">
+          <h3 id="memory-form-title">Nova memória</h3>
+          <label>Nome <input name="name" required maxlength="100"></label>
+          <div class="row">
+            <label>Tipo
+              <select name="type">
+                <option value="npc">NPC</option><option value="location">Local</option>
+                <option value="quest">Missão</option><option value="item">Item</option>
+                <option value="faction">Facção</option><option value="event">Evento</option>
+                <option value="fact">Fato</option>
+              </select>
+            </label>
+            <label>Situação
+              <select name="status">
+                <option value="active">Ativo</option><option value="resolved">Resolvido</option>
+                <option value="dead">Morto</option><option value="lost">Perdido</option>
+              </select>
+            </label>
+            <label>Importância
+              <select name="importance">
+                <option value="5">5, essencial</option><option value="4">4, importante</option>
+                <option value="3" selected>3, relevante</option><option value="2">2, detalhe</option>
+                <option value="1">1, menor</option>
+              </select>
+            </label>
+          </div>
+          <label>O que o Mestre deve lembrar <textarea name="content" rows="6" required maxlength="4000"></textarea></label>
+          <label class="check"><input type="checkbox" name="pinned"> Fixar: o Mestre vê isto em todo turno</label>
+          <div class="row">
+            <button class="primary" type="submit">Salvar</button>
+            <button type="button" id="memory-cancel" hidden>Cancelar</button>
+          </div>
+          <p id="memory-error" class="error" role="alert" hidden></p>
+        </form>
+        <div>
+          <details id="chronicle-box" class="card" hidden>
+            <summary>Crônica da campanha</summary>
+            <p id="chronicle-text" class="prewrap"></p>
+          </details>
+          <div id="memory-list" class="stack"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="view-usage" class="view" hidden>
+      <div class="section-head">
+        <h2>Consumo IA</h2>
+        <div id="usage-periods" class="period-switch" role="group" aria-label="Período"></div>
+      </div>
+      <p id="usage-error" class="error" role="alert" hidden></p>
+      <div id="usage-content" class="stack"></div>
+    </section>
+
+    <section id="view-metrics" class="view" hidden>
+      <div class="section-head"><h2>Métricas de Tokens</h2><button type="button" id="metrics-refresh" class="small">Atualizar</button></div>
+      <p id="metrics-error" class="error" role="alert" hidden></p>
+      <div id="metrics-content" class="stack"></div>
+    </section>
+
+    <section id="view-admin" class="view" hidden>
+      <div class="section-head"><h2>Painel Admin</h2><button type="button" id="admin-refresh" class="small">Atualizar</button></div>
+      <p id="admin-error" class="error" role="alert" hidden></p>
+      <div id="admin-content" class="stack"></div>
+    </section>
+
+    <section id="view-library" class="view" hidden>
+      <div class="section-head">
+        <div>
+          <h2>Biblioteca da Campanha</h2>
+          <label class="inline">Campanha <select id="library-campaign"></select></label>
+        </div>
+        <div id="library-filters" class="library-filters" role="group" aria-label="Filtrar artes"></div>
+      </div>
+      <p id="library-error" class="error" role="alert" hidden></p>
+      <div id="library-grid" class="library-grid"></div>
+    </section>
+  </main>
+
+  <script type="module" src="js/main.js?v=20261112b"></script>
+</body>
+</html>

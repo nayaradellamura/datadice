@@ -1,0 +1,11 @@
+# Nada de segredos, dados locais ou arquivos de desenvolvimento dentro da imagem.
+.env
+.env.*
+!.env.example
+node_modules
+data
+public/images
+test
+scripts
+.git
+*.log
