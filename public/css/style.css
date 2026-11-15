@@ -1290,3 +1290,12 @@ header h1 { cursor: pointer; }
 .home-actions button { flex: 1 1 auto; }
 .home-actions .primary { flex-basis: 100%; }
 .home-tip { text-align: center; }
+
+/* Narração: botão "Ouvir" nas falas do Mestre e configurações de voz. */
+.msg-listen { display: inline-flex; align-items: center; gap: .3rem; margin-top: .45rem; padding: .25rem .6rem; min-height: 32px;
+  font-size: .8rem; border-radius: 999px; background: transparent; border: 1px solid var(--line); color: var(--muted); }
+.msg-listen:hover { color: var(--text); border-color: var(--muted); }
+.msg-listen.speaking { color: var(--accent); border-color: var(--accent); }
+.msg .msg-listen { display: flex; width: fit-content; }
+.narration-row { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: .5rem; }
+#narration-test.speaking { color: var(--accent); border-color: var(--accent); }

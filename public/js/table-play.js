@@ -3,6 +3,7 @@ import { icon } from './icons.js';
 import { isD20Roll, rollWithFx } from './dice-fx.js';
 import { openSheetView } from './sheet-view.js';
 import { MONSTER_PRESETS, NPC_PRESETS } from './table-presets.js';
+import { listenButton } from './narrator.js';
 
 /*
  * Jogo dentro de uma mesa em grupo: abas Chat, Ficha (jogador) ou Painel (Mestre), Biblioteca, Notas (Mestre)
@@ -191,6 +192,7 @@ function messageNode(message) {
   message.kind === 'imagem' && message.image_url && h('a', { href: message.image_url, target: '_blank', rel: 'noopener', class: 'tp-image-link' },
     h('img', { src: message.image_url, alt: message.text || 'Imagem enviada pelo Mestre', class: 'tp-image', loading: 'lazy' })),
   message.text && h('span', { class: 'tp-text' }, formatText(message.text)),
+  (type === 'gm' || type === 'npc') && message.text && listenButton(message.text),
   h('time', { class: 'tp-time', datetime: message.created_at }, timeOf(message.created_at)));
 }
 

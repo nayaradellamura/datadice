@@ -118,6 +118,10 @@ Quando algo dá errado, o jogador recebe uma mensagem específica:
 
 O motivo da falha de cada ilustração fica salvo e aparece na bolha do chat e na Biblioteca.
 
+## Narração em voz
+
+As falas do Mestre (Mestre IA e, nas mesas, narração e falas de NPC) têm o botão "Ouvir". Usa a voz do próprio aparelho (Web Speech API): grátis, sem chave e sem mandar o texto para fora. Em Configurações → Narração em voz: ler sozinho as respostas do Mestre IA, escolher a voz em português e a velocidade. A qualidade da voz depende do celular ou do navegador.
+
 ## Início
 
 Toda vez que a pessoa entra, o DataDice abre no Início: dois cartões, Mestre IA (laranja) e Mesas com amigos (azul-petróleo), com o que cada um é, o que precisa e atalhos (jogar, colocar a chave, criar mesa, entrar com código). O seletor do topo mostra os dois com um subtítulo, e no modo Mesas a cor de destaque da tela muda para azul-petróleo. "Início" no menu ou o logo voltam para lá.

@@ -23,6 +23,8 @@ const ICONS = {
   compass: [['circle', { cx: 12, cy: 12, r: 10 }], ['path', { d: 'M16.2 7.8l-2.1 6.3-6.3 2.1 2.1-6.3z' }]],
   key: [['circle', { cx: 7.5, cy: 15.5, r: 5.5 }], ['path', { d: 'M21 2l-9.6 9.6M15.5 7.5l3 3L22 7l-3-3' }]],
   pen: [['path', { d: 'M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z' }]],
+  volume: [['path', { d: 'M11 5L6 9H2v6h4l5 4z' }], ['path', { d: 'M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14' }]],
+  stop: [['rect', { x: 6, y: 6, width: 12, height: 12, rx: 2 }]],
 };
 
 /** Ícone SVG (decorativo: aria-hidden). size em px. */

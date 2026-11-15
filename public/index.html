@@ -180,6 +180,28 @@
       </div>
       <p id="img-off-note" class="muted small-print">Desligado, o Mestre narra só em texto e a chave gasta menos.</p>
     </section>
+    <section class="settings-section" id="narration-section">
+      <h3>Narração em voz</h3>
+      <p class="muted small-print">Toque em "Ouvir" nas falas do Mestre. Usa a voz do seu aparelho: grátis e sem chave.</p>
+      <label class="switch">
+        <input id="narration-auto" type="checkbox" role="switch">
+        <span class="switch-track" aria-hidden="true"></span>
+        <span>Ler sozinho as respostas do Mestre IA</span>
+      </label>
+      <div class="narration-row">
+        <label>Voz <select id="narration-voice"></select></label>
+        <label>Velocidade
+          <select id="narration-rate">
+            <option value="0.85">Devagar</option>
+            <option value="1">Normal</option>
+            <option value="1.15">Rápida</option>
+            <option value="1.3">Mais rápida</option>
+          </select>
+        </label>
+      </div>
+      <button type="button" id="narration-test">Ouvir exemplo</button>
+      <p id="narration-note" class="muted small-print" hidden></p>
+    </section>
     </div>
     <div id="settings-pane-usage" class="settings-section" role="tabpanel" aria-labelledby="settings-tab-usage" hidden>
       <p class="muted small-print">Quanto a sua chave de IA gastou no DataDice.</p>

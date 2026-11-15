@@ -3,6 +3,7 @@ import { icon } from './icons.js';
 import { isD20Roll, rollWithFx } from './dice-fx.js';
 import { openSheetView } from './sheet-view.js';
 import { illustrationFigure, notifyVisualFinished } from './visual.js';
+import { listenButton, narration, primeNarration, speak, stopNarration } from './narrator.js';
 
 const STATUS_LABELS = { active: 'Ativo', unconscious: 'Inconsciente', stable: 'Estável', dead: 'Morto' };
 
@@ -23,7 +24,9 @@ const currentMember = () => party.find((member) => member.character_id === chara
 function addMessage(type, who, text) {
   const log = el('chat-log');
   const atBottom = log.scrollHeight - log.scrollTop - log.clientHeight < 120;
-  const node = h('div', { class: `msg ${type}` }, who && h('span', { class: 'who' }, who), formatText(text));
+  // Falas do Mestre têm o botão "Ouvir" (voz do aparelho).
+  const node = h('div', { class: `msg ${type}` }, who && h('span', { class: 'who' }, who), formatText(text),
+    type === 'gm' && listenButton(text));
   log.append(node);
   if (atBottom || type === 'player') log.scrollTop = log.scrollHeight;
   return node;
@@ -330,6 +333,7 @@ function renderSessionGate(member) {
 
 async function openSession() {
   const id = campaignId();
+  primeNarration();
   openingSession = true;
   showError(el('chat-error'), null);
   renderMember();
@@ -341,6 +345,9 @@ async function openSession() {
     });
     openingSession = false;
     await loadCampaign();
+    // A abertura da sessão também é lida, se a narração automática estiver ligada.
+    const opening = [...el('chat-log').querySelectorAll('.msg.gm')].at(-1);
+    if (narration.auto && opening) opening.querySelector('.msg-listen')?.click();
     el('chat-input').focus();
   } catch (err) {
     openingSession = false;
@@ -496,6 +503,9 @@ export async function refreshGameSelectors() {
 async function playGmTurn(extraBody, playerNode = null) {
   const member = currentMember();
   if (!member || sending) return false;
+  // Ainda dentro do toque: libera a leitura automática da resposta no celular.
+  stopNarration();
+  primeNarration();
 
   sending = true;
   el('chat-send').disabled = true;
@@ -512,6 +522,7 @@ async function playGmTurn(extraBody, playerNode = null) {
     pending.remove();
     for (const roll of result.rolls) addMessage('system', null, roll);
     attachIllustrations(addMessage('gm', 'Mestre', result.narration), result.illustrations);
+    if (narration.auto) speak(result.narration, [...el('chat-log').querySelectorAll('.msg.gm')].at(-1)?.querySelector('.msg-listen'));
     if (result.warning) addMessage('system', null, result.warning);
     if (result.memory_changes.length) addMessage('note', null, `Caderno atualizado: ${result.memory_changes.join(', ')}`);
     party = result.party;

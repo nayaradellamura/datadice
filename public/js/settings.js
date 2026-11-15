@@ -1,4 +1,5 @@
 import { api, bindEyeToggle, h, settings } from './api.js';
+import { narration, narrationSupported, portugueseVoices, speak } from './narrator.js';
 import { renderUsage } from './usage.js';
 
 const el = (id) => document.getElementById(id);
@@ -141,6 +142,27 @@ async function loadModels() {
   }
 }
 
+/** Narração: liga a leitura automática e escolhe a voz e a velocidade. */
+function renderNarration() {
+  if (!narrationSupported) {
+    for (const id of ['narration-auto', 'narration-voice', 'narration-rate', 'narration-test']) el(id).disabled = true;
+    el('narration-note').hidden = false;
+    el('narration-note').textContent = 'Este navegador não tem leitura em voz alta. No celular, use o Chrome ou o Safari atualizados.';
+    return;
+  }
+  el('narration-auto').checked = narration.auto;
+  el('narration-rate').value = String(narration.rate);
+  if (!el('narration-rate').value) el('narration-rate').value = '1';
+  const voices = portugueseVoices();
+  const select = el('narration-voice');
+  select.replaceChildren(...(voices.length
+    ? voices.map((voice) => h('option', { value: voice.name }, `${voice.name.replace(/^(Microsoft|Google)\s+/, '').replace(/\s*-\s*Portuguese.*$/i, '')}${/^pt[-_]PT/i.test(voice.lang) ? ' (Portugal)' : ''}`))
+    : [h('option', { value: '' }, 'Voz padrão do aparelho')]));
+  select.value = voices.some((voice) => voice.name === narration.voice) ? narration.voice : (voices[0]?.name ?? '');
+  el('narration-note').hidden = voices.length > 0;
+  el('narration-note').textContent = 'Nenhuma voz em português encontrada neste aparelho; será usada a voz padrão.';
+}
+
 /** Abas das Configurações: "IA e imagens" e "Consumo IA". */
 function showTab(tab) {
   for (const button of document.querySelectorAll('.settings-tabs button')) {
@@ -159,6 +181,7 @@ export function openSettings({ reason, tab = 'key' } = {}) {
   showTab(reason ? 'key' : tab);
   el('settings-images').checked = settings.imagesEnabled;
   render();
+  renderNarration();
   if (reason) setStatus('warn', reason);
   if (!dialog.open) dialog.showModal();
   if (!settings.textKey) el('ai-key').focus();
@@ -232,5 +255,15 @@ export function initSettings() {
   el('settings-dialog').addEventListener('close', () => {
     showKey(false);
     showImageKey(false);
+  });
+
+  // Narração.
+  el('narration-auto').addEventListener('change', (event) => { narration.auto = event.target.checked; });
+  el('narration-voice').addEventListener('change', (event) => { narration.voice = event.target.value; });
+  el('narration-rate').addEventListener('change', (event) => { narration.rate = Number(event.target.value); });
+  el('narration-test').addEventListener('click', () =>
+    speak('A porta da taverna range. Um anão de barba ruiva levanta os olhos da caneca e sorri: — Finalmente, aventureiros!', el('narration-test')));
+  document.addEventListener('voices-changed', () => {
+    if (el('settings-dialog').open) renderNarration();
   });
 }
