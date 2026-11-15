@@ -69,6 +69,38 @@ async function changeRole(user, role) {
   }
 }
 
+/** Esqueci minha senha: o admin gera o link e manda para a pessoa (WhatsApp, por exemplo). */
+async function makeResetLink(user) {
+  const box = el('admin-reset-link');
+  showError(el('admin-error'), null);
+  try {
+    const { token, expires_at: expiresAt } = await api(`/admin/users/${user.id}/password-reset`, { method: 'POST' });
+    const link = `${location.origin}${location.pathname}#nova-senha=${token}`;
+    const until = new Date(expiresAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    const input = h('input', { readOnly: true, value: link, 'aria-label': `Link de nova senha de ${user.name}` });
+    const copy = h('button', {
+      type: 'button',
+      class: 'primary',
+      onclick: async () => {
+        try {
+          await navigator.clipboard.writeText(link);
+          copy.textContent = 'Copiado';
+        } catch {
+          input.select();
+        }
+      },
+    }, 'Copiar');
+    box.replaceChildren(
+      h('h3', {}, `Link de nova senha para ${user.name}`),
+      h('p', { class: 'muted' }, `Mande só para ${user.email}. Vale até ${until} e funciona uma vez. Gerar outro cancela este.`),
+      h('div', { class: 'reset-link' }, input, copy));
+    box.hidden = false;
+    box.scrollIntoView({ block: 'nearest' });
+  } catch (err) {
+    showError(el('admin-error'), err);
+  }
+}
+
 export async function renderAdmin() {
   try {
     const [stats, users] = await Promise.all([api('/admin/stats'), api('/admin/users')]);
@@ -98,7 +130,11 @@ export async function renderAdmin() {
             },
             h('option', { value: 'player', selected: row.role === 'player' }, 'Jogador'),
             h('option', { value: 'admin', selected: row.role === 'admin' }, 'Admin'))],
+          ['Senha', (row) => row.id === session.user?.id
+            ? h('span', { class: 'muted' }, '—')
+            : h('button', { type: 'button', class: 'small', onclick: () => makeResetLink(row) }, 'Link de nova senha')],
         ], users)),
+      h('div', { class: 'card', id: 'admin-reset-link', hidden: true }),
     );
     showError(el('admin-error'), null);
   } catch (err) {

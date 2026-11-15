@@ -1,4 +1,4 @@
-import { randomBytes } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import bcrypt from 'bcryptjs';
@@ -40,8 +40,9 @@ export async function checkPassword(user, password) {
   return Boolean(user?.password_hash) && matches;
 }
 
+// v = versão do login (users.token_version): trocar a senha invalida os tokens antigos.
 export const signToken = (user, secret) =>
-  jwt.sign({ userId: user.id, role: user.role }, secret, { algorithm: 'HS256', expiresIn: TOKEN_TTL });
+  jwt.sign({ userId: user.id, role: user.role, v: user.token_version ?? 0 }, secret, { algorithm: 'HS256', expiresIn: TOKEN_TTL });
 
 export const verifyToken = (token, secret) => jwt.verify(token, secret, { algorithms: ['HS256'] });
 
@@ -73,7 +74,7 @@ export async function ensureAdmin(db, { name, email, password }) {
   const existing = (await db.get('SELECT id FROM users WHERE email = ?', clean.email))
     ?? (await db.get('SELECT id FROM users WHERE email = ? AND password_hash IS NULL', LEGACY_EMAIL));
   if (existing) {
-    await db.run(`UPDATE users SET name = ?, email = ?, password_hash = ?, role = 'admin' WHERE id = ?`,
+    await db.run(`UPDATE users SET name = ?, email = ?, password_hash = ?, role = 'admin', token_version = token_version + 1 WHERE id = ?`,
       clean.name, clean.email, hash, existing.id);
     return { id: existing.id, created: false };
   }
@@ -86,3 +87,46 @@ export async function ensureAdmin(db, { name, email, password }) {
 
 export const hasAdmin = async (db) =>
   Boolean(await db.get(`SELECT 1 FROM users WHERE role = 'admin' AND password_hash IS NOT NULL`));
+
+// ---------- Esqueci minha senha (link gerado pelo admin) ----------
+
+export const RESET_TTL_MINUTES = 60;
+const hashResetToken = (token) => createHash('sha256').update(token).digest('hex');
+
+/** Cria o código de uso único. Os links anteriores ainda não usados dessa pessoa deixam de valer. */
+export async function createPasswordReset(db, { userId, createdBy }) {
+  const token = randomBytes(32).toString('base64url');
+  const row = await db.tx(async (t) => {
+    await t.run('DELETE FROM password_resets WHERE user_id = ? AND used_at IS NULL', userId);
+    return (await t.run(
+      `INSERT INTO password_resets (user_id, token_hash, created_by, expires_at)
+       VALUES (?, ?, ?, now() + make_interval(mins => ?)) RETURNING expires_at`,
+      userId, hashResetToken(token), createdBy, RESET_TTL_MINUTES,
+    )).rows[0];
+  });
+  return { token, expires_at: row.expires_at };
+}
+
+/** Troca a senha com o código. Devolve o usuário (já com a nova versão de login). */
+export async function usePasswordReset(db, token, password) {
+  const invalid = new HttpError(400, 'Este link de nova senha não vale mais (já foi usado ou passou de 1 hora). Peça outro ao administrador.', 'reset_invalid');
+  if (typeof token !== 'string' || !/^[\w-]{20,100}$/.test(token)) throw invalid;
+  const clean = validatePassword(password);
+  const hash = await hashPassword(clean);
+  return db.tx(async (t) => {
+    const reset = await t.get(
+      `SELECT id, user_id FROM password_resets
+       WHERE token_hash = ? AND used_at IS NULL AND expires_at > now() FOR UPDATE`,
+      hashResetToken(token),
+    );
+    if (!reset) throw invalid;
+    await t.run('UPDATE password_resets SET used_at = now() WHERE id = ?', reset.id);
+    const user = (await t.run(
+      `UPDATE users SET password_hash = ?, token_version = token_version + 1
+       WHERE id = ? AND password_hash IS NOT NULL RETURNING *`,
+      hash, reset.user_id,
+    )).rows[0];
+    if (!user) throw invalid;
+    return user;
+  });
+}

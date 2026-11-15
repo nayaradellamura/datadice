@@ -3,7 +3,7 @@ import { Router } from 'express';
 import { HttpError } from '../middleware/errorHandler.js';
 import { rateLimit } from '../middleware/rateLimit.js';
 import {
-  checkPassword, hashPassword, normalizeEmail, publicUser, signToken, validateEmail, validateName, validatePassword,
+  checkPassword, hashPassword, usePasswordReset, normalizeEmail, publicUser, signToken, validateEmail, validateName, validatePassword,
 } from '../services/auth.js';
 
 const DEFAULT_LIMITS = { windowMs: 15 * 60 * 1000, max: 20 };
@@ -50,6 +50,12 @@ export function authRoutes(db, { secret, registrationCode, limits = DEFAULT_LIMI
   router.post('/login', limiter, async (req, res) => {
     const user = await db.get('SELECT * FROM users WHERE email = ?', normalizeEmail(req.body?.email));
     if (!(await checkPassword(user, req.body?.password))) throw new HttpError(401, 'E-mail ou senha incorretos.');
+    res.json({ token: signToken(user, secret), user: publicUser(user) });
+  });
+
+  // Nova senha pelo link que o admin gerou. Entra direto na conta depois de trocar.
+  router.post('/reset', limiter, async (req, res) => {
+    const user = await usePasswordReset(db, req.body?.token, req.body?.password);
     res.json({ token: signToken(user, secret), user: publicUser(user) });
   });
 

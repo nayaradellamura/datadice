@@ -37,6 +37,17 @@
         <p id="auth-hint" class="muted small-print" hidden>A senha precisa ter pelo menos 8 caracteres.</p>
         <button class="primary big" id="auth-submit" type="submit">Entrar</button>
         <p id="auth-error" class="error" role="alert" hidden></p>
+        <button type="button" id="auth-forgot" class="link-button auth-forgot">Esqueci minha senha</button>
+        <p id="auth-forgot-help" class="muted small-print" hidden>Peça ao administrador do DataDice um link para criar uma nova senha. O link vale por 1 hora e só pode ser usado uma vez.</p>
+      </form>
+      <form id="reset-form" class="stack" novalidate hidden>
+        <h2 class="reset-title">Criar nova senha</h2>
+        <label>Nova senha <input name="password" type="password" autocomplete="new-password" required minlength="8" maxlength="72"></label>
+        <label>Repita a nova senha <input name="confirm" type="password" autocomplete="new-password" required minlength="8" maxlength="72"></label>
+        <p class="muted small-print">Pelo menos 8 caracteres. Ao salvar, você entra na conta e os outros aparelhos são desconectados.</p>
+        <button class="primary big" id="reset-submit" type="submit">Salvar nova senha</button>
+        <p id="reset-error" class="error" role="alert" hidden></p>
+        <button type="button" id="reset-cancel" class="link-button auth-forgot">Voltar para o login</button>
       </form>
     </div>
   </section>
@@ -166,15 +177,20 @@
         <h2 id="roster-title">Seus personagens</h2>
         <div class="roster-tools">
           <input id="character-filter" type="search" placeholder="Buscar personagem" aria-label="Buscar por nome, raça ou classe" hidden>
+          <button type="button" id="character-import">Importar PDF</button>
           <button type="button" class="primary" id="character-new">Novo personagem</button>
+          <input type="file" id="character-import-file" accept="application/pdf,.pdf" hidden>
         </div>
       </div>
+      <p id="character-import-status" class="muted" role="status" hidden></p>
+      <p id="character-import-error" class="error" role="alert" hidden></p>
       <p id="table-return" class="draft-note" hidden>
         <span id="table-return-text">Criando uma ficha para a sua mesa. Depois de salvar, volte por aqui.</span>
         <button type="button" id="table-return-button" class="small">Voltar para a mesa</button>
       </p>
       <div id="character-roster" class="roster scroll-list"></div>
       <h2 id="sheet-title">Novo personagem</h2>
+      <p id="import-note" class="draft-note" hidden></p>
       <form id="character-form"></form>
     </section>
 

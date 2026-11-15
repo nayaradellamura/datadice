@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { requireAdmin } from '../middleware/auth.js';
 import { HttpError } from '../middleware/errorHandler.js';
-import { ROLES } from '../services/auth.js';
+import { createPasswordReset, ROLES } from '../services/auth.js';
 import { asId } from '../http/validate.js';
 
 export function adminRoutes(db) {
@@ -29,6 +29,15 @@ export function adminRoutes(db) {
     if (user.id === req.user.id && role !== 'admin') throw new HttpError(400, 'Você não pode remover o seu próprio acesso de admin.');
     await db.run('UPDATE users SET role = ? WHERE id = ?', role, user.id);
     res.json({ id: user.id, role });
+  });
+
+  // Esqueci minha senha: gera o código do link. O link completo é montado no navegador do admin
+  // (com o endereço do site) e só é mostrado uma vez.
+  router.post('/users/:id/password-reset', async (req, res) => {
+    const id = asId(req.params.id);
+    const user = id && (await db.get('SELECT id FROM users WHERE id = ? AND password_hash IS NOT NULL', id));
+    if (!user) throw new HttpError(404, 'Usuário não encontrado.');
+    res.status(201).json(await createPasswordReset(db, { userId: user.id, createdBy: req.user.id }));
   });
 
   // Relatório geral do sistema.

@@ -15,8 +15,10 @@ export function authenticateToken(db, secret) {
       throw authError('Sua sessão expirou. Entre de novo.');
     }
     const user = Number.isInteger(payload.userId)
-      && (await db.get('SELECT id, name, email, role FROM users WHERE id = ? AND password_hash IS NOT NULL', payload.userId));
-    if (!user) throw authError('Sua sessão expirou. Entre de novo.');
+      && (await db.get('SELECT id, name, email, role, token_version FROM users WHERE id = ? AND password_hash IS NOT NULL', payload.userId));
+    // Senha trocada depois deste login: o token antigo não vale mais.
+    if (!user || (payload.v ?? 0) !== user.token_version) throw authError('Sua sessão expirou. Entre de novo.');
+    delete user.token_version;
     req.user = user;
     // Quando o login vence (em segundos desde 1970). O tempo real das mesas fecha o canal nessa hora.
     req.tokenExpiresAt = Number.isInteger(payload.exp) ? payload.exp * 1000 : null;

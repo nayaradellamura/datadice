@@ -20,6 +20,8 @@ export function errorHandler(err, _req, res, _next) {
     else console.error(err);
   }
   const ours = err instanceof HttpError;
-  const message = status === 500 ? 'Erro interno do servidor.' : ours || err.expose ? err.message : 'Requisição inválida.';
+  const message = status === 500 ? 'Erro interno do servidor.'
+    : err.type === 'entity.too.large' ? 'O arquivo enviado é grande demais.'
+      : ours || err.expose ? err.message : 'Requisição inválida.';
   res.status(status).json({ error: message, ...(ours && err.code ? { code: err.code } : {}) });
 }

@@ -16,6 +16,7 @@ export const KIND_LABELS = {
   session: 'Abertura de sessão',
   summary: 'Resumos automáticos',
   campaign: 'Criação de campanha',
+  import: 'Importar ficha em PDF',
 };
 
 export const PERIODS = { today: 'Hoje', 7: '7 dias', 30: '30 dias', all: 'Tudo' };

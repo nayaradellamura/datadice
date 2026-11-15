@@ -88,15 +88,20 @@ function apiError(message, code, status) {
  */
 export async function api(path, { method = 'GET', body, gemini = false } = {}) {
   const headers = {};
-  if (body !== undefined) headers['content-type'] = 'application/json';
+  // Arquivo (ex.: PDF) vai como está; o resto, em JSON.
+  const raw = body instanceof Blob;
+  if (body !== undefined) headers['content-type'] = raw ? (body.type || 'application/octet-stream') : 'application/json';
   if (session.token) headers.authorization = `Bearer ${session.token}`;
-  if (gemini) {
+  // 'optional': manda a chave se houver; o servidor decide se precisa dela.
+  if (gemini === 'optional') {
+    if (settings.apiKey) headers['x-gemini-key'] = settings.apiKey;
+  } else if (gemini) {
     if (!settings.apiKey) throw apiError('Configure sua chave do Gemini em Configurações (ícone de engrenagem) para jogar.', 'gemini_key', 0);
     headers['x-gemini-key'] = settings.apiKey;
   }
   let response;
   try {
-    response = await fetch(`/api${path}`, { method, headers, body: body === undefined ? undefined : JSON.stringify(body) });
+    response = await fetch(`/api${path}`, { method, headers, body: body === undefined || raw ? body : JSON.stringify(body) });
   } catch {
     throw apiError('Sem conexão com o servidor. Confira sua internet e tente de novo.', 'offline', 0);
   }

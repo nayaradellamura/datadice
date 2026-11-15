@@ -305,3 +305,54 @@ test('segredo do JWT: usa JWT_SECRET forte, recusa um fraco e cria um aleatório
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+// ---------- Esqueci minha senha (link gerado pelo admin) ----------
+
+async function registerPlayer(email = 'ana@teste.dev') {
+  const { body } = await request('POST', '/api/auth/register', { body: { name: 'Ana', email, password: 'senha-antiga-1' } });
+  return body;
+}
+
+test('admin gera link de nova senha: troca a senha, entra e desconecta os aparelhos antigos', async () => {
+  const admin = await addUser(db, { role: 'admin' });
+  const ana = await registerPlayer();
+  const link = await request('POST', `/api/admin/users/${ana.user.id}/password-reset`, { token: admin.token });
+  assert.equal(link.status, 201);
+  assert.match(link.body.token, /^[\w-]{40,}$/);
+  // Só o hash fica guardado.
+  const stored = await db.get('SELECT token_hash FROM password_resets WHERE user_id = ?', ana.user.id);
+  assert.notEqual(stored.token_hash, link.body.token);
+
+  const reset = await request('POST', '/api/auth/reset', { body: { token: link.body.token, password: 'senha-nova-123' } });
+  assert.equal(reset.status, 200);
+  assert.equal(reset.body.user.id, ana.user.id);
+  assert.equal((await request('GET', '/api/auth/me', { token: reset.body.token })).status, 200);
+  // O login de antes da troca não vale mais.
+  assert.equal((await request('GET', '/api/auth/me', { token: ana.token })).status, 401);
+  assert.equal((await request('POST', '/api/auth/login', { body: { email: 'ana@teste.dev', password: 'senha-antiga-1' } })).status, 401);
+  assert.equal((await request('POST', '/api/auth/login', { body: { email: 'ana@teste.dev', password: 'senha-nova-123' } })).status, 200);
+  // Uso único.
+  const again = await request('POST', '/api/auth/reset', { body: { token: link.body.token, password: 'outra-senha-99' } });
+  assert.equal(again.status, 400);
+  assert.equal(again.body.code, 'reset_invalid');
+});
+
+test('link de nova senha: vence em 1 hora, um novo cancela o anterior, e só o admin gera', async () => {
+  const admin = await addUser(db, { role: 'admin' });
+  const ana = await registerPlayer();
+  const first = (await request('POST', `/api/admin/users/${ana.user.id}/password-reset`, { token: admin.token })).body;
+  const second = (await request('POST', `/api/admin/users/${ana.user.id}/password-reset`, { token: admin.token })).body;
+  assert.equal((await request('POST', '/api/auth/reset', { body: { token: first.token, password: 'senha-nova-123' } })).status, 400);
+
+  await db.run(`UPDATE password_resets SET expires_at = now() - interval '1 minute'`);
+  assert.equal((await request('POST', '/api/auth/reset', { body: { token: second.token, password: 'senha-nova-123' } })).status, 400);
+
+  const player = await addUser(db);
+  assert.equal((await request('POST', `/api/admin/users/${ana.user.id}/password-reset`, { token: player.token })).status, 403);
+  assert.equal((await request('POST', '/api/admin/users/99999/password-reset', { token: admin.token })).status, 404);
+  // Senha curta é recusada sem gastar o link.
+  const third = (await request('POST', `/api/admin/users/${ana.user.id}/password-reset`, { token: admin.token })).body;
+  assert.equal((await request('POST', '/api/auth/reset', { body: { token: third.token, password: 'curta' } })).status, 400);
+  assert.equal((await request('POST', '/api/auth/reset', { body: { token: third.token, password: 'senha-boa-123' } })).status, 200);
+  assert.equal((await request('POST', '/api/auth/reset', { body: { token: 'nada', password: 'senha-boa-123' } })).status, 400);
+});

@@ -1139,3 +1139,14 @@ input, select { min-height: 2.25rem; }
 /* Enviar com a altura padrão, alinhado ao fim da caixa de texto (Mestre IA e mesas). */
 .chat-form { align-items: flex-end; }
 .chat-form > button { min-height: 2.5rem; }
+
+/* Personagens vazio: criar ou importar ficha em PDF. */
+.empty-actions { display: flex; flex-direction: column; gap: .5rem; width: 100%; max-width: 22rem; }
+.empty-actions .big { width: 100%; }
+#import-note strong { flex-basis: 100%; }
+
+/* Esqueci minha senha. */
+.auth-forgot { justify-self: center; align-self: center; font-size: .9rem; }
+.reset-title { font-size: 1.15rem; margin: 0; }
+.reset-link { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; margin-top: .5rem; }
+.reset-link input { flex: 1 1 16rem; min-width: 0; font-size: .85rem; }

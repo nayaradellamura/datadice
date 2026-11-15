@@ -473,6 +473,7 @@ function showPage(page) {
 
 function setForm(character) {
   foreign = null;
+  document.getElementById('import-note').hidden = true;
   portraitRequest += 1;
   setGenerating(false);
   showError(form.querySelector('#portrait-error'), null);
@@ -584,7 +585,9 @@ function emptyRoster() {
     h('p', { class: 'muted' }, 'A ficha de D&D 5e que faz as contas por você.'),
     h('ol', { class: 'empty-steps' }, steps.map(([name, title, text]) =>
       h('li', {}, h('span', { class: 'step-icon', 'aria-hidden': 'true' }, svgIcon(name, 26)), h('div', {}, h('strong', {}, title), h('small', {}, text))))),
-    h('button', { type: 'button', class: 'primary big', onclick: () => document.getElementById('character-new').click() }, 'Criar personagem'));
+    h('div', { class: 'empty-actions' },
+      h('button', { type: 'button', class: 'primary big', onclick: () => document.getElementById('character-new').click() }, 'Criar personagem'),
+      h('button', { type: 'button', class: 'big', onclick: () => document.getElementById('character-import-file').click() }, 'Importar ficha em PDF')));
 }
 
 function renderRoster() {
@@ -594,6 +597,7 @@ function renderRoster() {
   document.getElementById('roster-title').hidden = empty;
   // Sem personagens, o convite ocupa a tela e já tem o botão de criar.
   document.getElementById('character-new').hidden = empty && form.hidden;
+  document.getElementById('character-import').hidden = empty && form.hidden;
   filterInput.hidden = rosterCharacters.length < 5;
   const query = filterInput.hidden ? '' : plain(filterInput.value.trim());
   const visible = rosterCharacters.filter((c) => plain(`${c.name} ${c.race} ${c.class}`).includes(query));
@@ -649,6 +653,52 @@ export async function openCharacter(id) {
   await refreshPreview();
   await refreshRoster();
   document.getElementById('sheet-title').scrollIntoView({ block: 'start' });
+}
+
+const MAX_PDF_MB = 10;
+
+/** Lê uma ficha em PDF e abre o formulário já preenchido; o jogador confere e cria. */
+async function importSheet(file) {
+  const button = document.getElementById('character-import');
+  const status = document.getElementById('character-import-status');
+  const errorBox = document.getElementById('character-import-error');
+  showError(errorBox, null);
+  if (!file) return;
+  if (!/\.pdf$/i.test(file.name) && file.type !== 'application/pdf') {
+    showError(errorBox, new Error('Escolha um arquivo PDF.'));
+    return;
+  }
+  if (file.size > MAX_PDF_MB * 1024 * 1024) {
+    showError(errorBox, new Error(`O PDF passou de ${MAX_PDF_MB} MB. Exporte a ficha de novo com menos qualidade.`));
+    return;
+  }
+  button.disabled = true;
+  status.hidden = false;
+  status.textContent = 'Lendo a ficha... fichas escaneadas podem levar até 1 minuto.';
+  try {
+    const result = await api('/characters/import', {
+      method: 'POST',
+      body: new Blob([file], { type: 'application/pdf' }),
+      gemini: 'optional',
+    });
+    setForm(result.character);
+    setCreating(true);
+    showSheet(true);
+    document.getElementById('sheet-title').textContent = result.character.name ? `Importado: ${result.character.name}` : 'Personagem importado';
+    form.querySelector('#sheet-submit').textContent = 'Criar personagem';
+    const note = document.getElementById('import-note');
+    note.replaceChildren(
+      h('span', {}, `Ficha lida de "${file.name}"${result.source === 'ia' ? ' pelo Gemini' : ''}. Confira as 3 páginas e clique em Criar personagem. Valores que não estavam legíveis ficaram em branco ou automáticos.`),
+      ...result.warnings.map((warning) => h('strong', {}, warning)));
+    note.hidden = false;
+    await refreshPreview();
+    document.getElementById('sheet-title').scrollIntoView({ block: 'start' });
+  } catch (err) {
+    showError(errorBox, err);
+  } finally {
+    button.disabled = false;
+    status.hidden = true;
+  }
 }
 
 export async function initCharacterForm(saved) {
@@ -732,6 +782,13 @@ export async function initCharacterForm(saved) {
   });
 
   document.getElementById('character-filter').addEventListener('input', renderRoster);
+  const fileInput = document.getElementById('character-import-file');
+  document.getElementById('character-import').addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', async () => {
+    const [file] = fileInput.files;
+    fileInput.value = '';
+    await importSheet(file);
+  });
 
   setForm(null);
   showSheet(false);

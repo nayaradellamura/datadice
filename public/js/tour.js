@@ -106,7 +106,7 @@ export const TOURS = [
     async start() { await ctx.showView('characters'); },
     cleanup() { if (visible(el('sheet-close')) && document.getElementById('view-characters').classList.contains('is-creating')) click('#sheet-close'); },
     steps: [
-      { target: () => firstVisible('#character-new', '#character-roster .empty-hero button'), title: 'Seus personagens', text: 'Aqui ficam todas as suas fichas. Para começar uma nova, use este botão.' },
+      { target: () => firstVisible('#character-new', '#character-roster .empty-hero button'), title: 'Seus personagens', text: 'Aqui ficam todas as suas fichas. Para começar uma nova, use este botão. Já tem a ficha em PDF? Use Importar PDF: o formulário vem preenchido para você conferir.' },
       { prepare: () => click('#character-new'), target: () => firstVisible('#character-form .sheet-tabs'), title: 'A ficha tem 3 páginas', text: 'Página 1: o essencial para jogar. Página 2: aparência, história e retrato. Página 3: magias (para quem conjura).' },
       { target: () => firstVisible('#character-form [name=class]'), title: 'Raça e classe', text: 'Escolha a raça e a classe. A classe já define o dado de vida, as salvaguardas e o atributo de magia.' },
       { target: () => firstVisible('#character-form [name=str]'), title: 'Atributos', text: 'Preencha Força, Destreza, Constituição, Inteligência, Sabedoria e Carisma. Modificadores, perícias, CA e PV são calculados sozinhos.' },

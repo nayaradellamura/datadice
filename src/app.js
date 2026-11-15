@@ -5,6 +5,7 @@ import { errorHandler, notFoundApi } from './middleware/errorHandler.js';
 import { adminRoutes } from './routes/admin.js';
 import { authRoutes } from './routes/auth.js';
 import { campaignRoutes, memoryRoutes } from './routes/campaigns.js';
+import { characterImportRoutes } from './routes/characterImport.js';
 import { characterRoutes } from './routes/characters.js';
 import { chatRoutes } from './routes/chat.js';
 import { configRoutes } from './routes/config.js';
@@ -125,6 +126,8 @@ export function createApp({
   app.use((req, res, next) => (bigBody(req) ? bigJson(req, res, next) : next()));
   app.get('/api/auth/me', (req, res) => res.json(publicUser(req.user)));
   app.use('/api/config', configRoutes({ createLlm }));
+  // Ficha em PDF (até 10 MB, lida só depois do login).
+  app.use('/api/characters/import', characterImportRoutes(db, { createLlm }));
   app.use('/api/characters', characterRoutes(db, { onChanged: (id) => notifyCharacterTables(db, tableHub, id) }));
   app.use('/api/portraits', portraitUploadRoutes(db));
   app.use('/api/campaigns', campaignGeneratorRoutes(db, needsKey));
