@@ -1316,3 +1316,11 @@ body[data-mode="home"]:not(:has(#admin-menu-button:not([hidden]))) .topbar nav {
 @keyframes help-pulse { 50% { box-shadow: 0 0 0 7px rgb(242 181 42 / .25); } }
 @media (prefers-reduced-motion: reduce) { #tours-open.pulse-now { animation: none; } }
 #ai-play[hidden] { display: none; }
+
+/* Treinamento em sequência: módulo atual e o cartão entre um módulo e outro. */
+.tour-module { color: var(--gold); font-weight: 600; }
+.tour-bar { height: 6px; border-radius: 999px; background: var(--input); overflow: hidden; margin: .1rem 0 .3rem; }
+.tour-bar i { display: block; height: 100%; background: var(--gold); border-radius: inherit; }
+.tour-between .tour-actions { justify-content: flex-end; }
+.tour-layer:not(:has(.tour-spot)) { background: rgb(0 0 0 / .62); }
+.home-card { cursor: pointer; }

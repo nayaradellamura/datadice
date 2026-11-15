@@ -299,7 +299,12 @@ async function runTour(tour) {
     layer.remove();
     running = null;
     try { tour.cleanup?.(); } catch { /* nada a desfazer */ }
-    if (completed) markDone(tour.id);
+    if (completed) {
+      markDone(tour.id);
+      // Terminou um módulo: oferece o próximo ainda não feito, sem precisar abrir a lista de novo.
+      betweenModules(tour);
+      return;
+    }
     el('tours-open')?.focus();
   }
 
@@ -323,8 +328,11 @@ async function runTour(tour) {
       await wait(120);
     }
     const last = i === steps.length - 1;
+    const modules = availableTours();
     card.replaceChildren(
-      h('p', { class: 'tour-progress' }, `${tour.title} · ${steps.slice(0, i + 1).filter((s) => !s.fallback).length || 1} de ${counted(tour)}`),
+      h('p', { class: 'tour-progress' },
+        h('span', { class: 'tour-module' }, `Módulo ${modules.indexOf(tour) + 1} de ${modules.length}`),
+        ` · ${tour.title} · ${steps.slice(0, i + 1).filter((s) => !s.fallback).length || 1} de ${counted(tour)}`),
       h('h3', { id: 'tour-title' }, step.title),
       h('p', { class: 'tour-text' }, step.text),
       h('div', { class: 'tour-actions' },
@@ -345,12 +353,59 @@ async function runTour(tour) {
   await show(0, 1);
 }
 
+/** Os módulos que esta pessoa vê, na ordem da lista (o de admin só para admin). */
+function availableTours() {
+  const admin = session.user?.role === 'admin';
+  return TOURS.filter((tour) => !tour.adminOnly || admin);
+}
+
+/** Próximo módulo ainda não concluído, depois de "current" (dá a volta na lista). */
+function nextTour(current) {
+  const modules = availableTours();
+  const done = doneSet();
+  const start = modules.indexOf(current);
+  for (let step = 1; step < modules.length; step += 1) {
+    const candidate = modules[(start + step) % modules.length];
+    if (!done.has(candidate.id)) return candidate;
+  }
+  return null;
+}
+
+/** Entre um módulo e outro: "Módulo concluído" e o próximo, com Continuar ou Parar aqui. */
+function betweenModules(tour) {
+  const modules = availableTours();
+  const next = nextTour(tour);
+  const doneCount = modules.filter((item) => doneSet().has(item.id)).length;
+  const layer = h('div', { class: 'tour-layer' });
+  const close = () => {
+    layer.remove();
+    document.removeEventListener('keydown', onKey);
+    el('tours-open')?.focus();
+  };
+  const onKey = (event) => { if (event.key === 'Escape') close(); };
+  const card = h('div', { class: 'tour-card centered tour-between', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'tour-between-title' },
+    h('p', { class: 'tour-progress' }, `${doneCount} de ${modules.length} módulos concluídos`),
+    h('div', { class: 'tour-bar', 'aria-hidden': 'true' }, h('i', { style: `width:${Math.round((doneCount / modules.length) * 100)}%` })),
+    h('h3', { id: 'tour-between-title' }, `${tour.title} concluído ✓`),
+    next
+      ? h('p', { class: 'tour-text' }, 'Próximo módulo: ', h('strong', {}, next.title), ` · ${next.blurb} (${counted(next)} passos)`)
+      : h('p', { class: 'tour-text' }, 'Você fez todos os módulos do treinamento. Para rever qualquer um, toque no botão de ajuda lá em cima.'),
+    h('div', { class: 'tour-actions' },
+      next && h('button', { type: 'button', class: 'small tour-exit', onclick: close }, 'Parar aqui'),
+      next
+        ? h('button', { type: 'button', class: 'primary tour-next', onclick: () => { close(); runTour(next); } }, 'Continuar')
+        : h('button', { type: 'button', class: 'primary tour-next', onclick: close }, 'Fechar')));
+  layer.append(card);
+  document.body.append(layer);
+  document.addEventListener('keydown', onKey);
+  card.querySelector('.tour-next').focus();
+}
+
 // ---------- Lista de treinamentos ----------
 
 function tourList() {
   const done = doneSet();
-  const admin = session.user?.role === 'admin';
-  return TOURS.filter((tour) => !tour.adminOnly || admin).map((tour) => h('li', {},
+  return availableTours().map((tour) => h('li', {},
     h('button', {
       type: 'button',
       class: 'tour-item',

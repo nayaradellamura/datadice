@@ -313,8 +313,19 @@ initUsage();
 // Início: toque no logo ou nos botões dos cartões.
 document.querySelector('header h1').addEventListener('click', () => showView('home').catch(viewFailed));
 document.getElementById('home-welcome-yes').addEventListener('click', () => {
+  // Aceitou: o convite não volta (se parar no meio, a bolinha no botão de ajuda continua avisando).
+  store.set(`welcome.dismissed.${user.id}`, '1');
   document.getElementById('home-welcome').hidden = true;
   startFirstSteps();
+});
+// O cartão inteiro abre a opção (não só os botões). Os botões continuam fazendo cada um a sua ação.
+document.querySelector('.home-card.mode-ia').addEventListener('click', (event) => {
+  if (event.target.closest('button')) return;
+  document.getElementById(settings.textKey ? 'home-ia-go' : 'home-ia-key').click();
+});
+document.querySelector('.home-card.mode-mesa').addEventListener('click', (event) => {
+  if (event.target.closest('button')) return;
+  showView('tables').catch(viewFailed);
 });
 document.getElementById('home-welcome-no').addEventListener('click', () => {
   // Não quis agora: mostra onde fica o treinamento por alguns segundos. A bolinha continua no botão.
