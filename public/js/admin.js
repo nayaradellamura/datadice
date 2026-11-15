@@ -101,6 +101,27 @@ async function makeResetLink(user) {
   }
 }
 
+/** Remove a conta, depois de confirmar o que vai junto. */
+async function removeUser(user) {
+  const parts = [
+    `${number(user.characters)} personagem(ns)`,
+    `${number(user.campaigns)} campanha(s) do Mestre IA`,
+    `${number(user.tables)} mesa(s) em que é Mestre`,
+  ];
+  const tablesWarning = Number(user.tables) > 0 ? ' As mesas em que é Mestre acabam para todos os jogadores delas.' : '';
+  const ok = window.confirm(
+    `Remover a conta de ${user.name} (${user.email})?\n\nApaga junto: ${parts.join(', ')}.${tablesWarning}\n\nNão dá para desfazer.`,
+  );
+  if (!ok) return;
+  showError(el('admin-error'), null);
+  try {
+    await api(`/admin/users/${user.id}`, { method: 'DELETE' });
+    await renderAdmin();
+  } catch (err) {
+    showError(el('admin-error'), err);
+  }
+}
+
 export async function renderAdmin() {
   try {
     const [stats, users] = await Promise.all([api('/admin/stats'), api('/admin/users')]);
@@ -121,6 +142,7 @@ export async function renderAdmin() {
           ['Desde', (row) => date(row.created_at)],
           ['Personagens', (row) => number(row.characters)],
           ['Campanhas', (row) => number(row.campaigns)],
+          ['Mesas', (row) => number(row.tables)],
           ['Tokens', (row) => number(row.total_tokens)],
           ['Papel', (row) => row.id === session.user?.id
             ? h('span', { class: 'role-badge admin' }, 'Admin (você)')
@@ -133,6 +155,9 @@ export async function renderAdmin() {
           ['Senha', (row) => row.id === session.user?.id
             ? h('span', { class: 'muted' }, '—')
             : h('button', { type: 'button', class: 'small', onclick: () => makeResetLink(row) }, 'Link de nova senha')],
+          ['Conta', (row) => row.id === session.user?.id
+            ? h('span', { class: 'muted' }, '—')
+            : h('button', { type: 'button', class: 'small danger', onclick: () => removeUser(row) }, 'Remover')],
         ], users)),
       h('div', { class: 'card', id: 'admin-reset-link', hidden: true }),
     );

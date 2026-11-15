@@ -141,7 +141,7 @@ export function createApp({
   app.use('/api/chat', needsKey, chatRoutes(db, gameMaster));
   app.use('/api/tokens', tokenRoutes(db));
   app.use('/api/generate-image', needsKey, imageRoutes());
-  app.use('/api/admin', adminRoutes(db));
+  app.use('/api/admin', adminRoutes(db, { hub: tableHub }));
   app.use('/api', visualRoutes(db, visuals, needsKey));
   app.use('/api', sessionRoutes(db, gameMaster, needsKey));
   app.use('/api', notFoundApi);
