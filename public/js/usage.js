@@ -80,7 +80,7 @@ export async function renderUsage() {
         h('details', { class: 'more' },
           h('summary', {}, 'De onde vem esse limite?'),
           h('ul', {},
-            h('li', {}, 'O plano gratuito do Gemini limita quantos pedidos a chave faz por dia. Cada mensagem ao Mestre usa um ou mais pedidos.'),
+            h('li', {}, 'Cada mensagem ao Mestre usa um ou mais pedidos à IA. No Gemini grátis, há um limite de pedidos por dia.'),
             h('li', {}, 'O Google não informa ao DataDice quanto sobra. O limite abaixo é o valor típico do plano gratuito: confira o da sua chave no Google AI Studio (Limites de taxa) e ajuste aqui.'),
             h('li', {}, 'A conta considera só o que foi usado pelo DataDice com a sua conta. Se a mesma chave for usada em outro lugar, sobra menos.')),
           h('label', { class: 'inline quota-limit' }, 'Limite diário da minha chave:', limitInput, 'pedidos'))),

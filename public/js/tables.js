@@ -92,7 +92,7 @@ function emptyTables() {
   return h('div', { class: 'empty-hero' },
     h('span', { class: 'empty-hero-icon', 'aria-hidden': 'true' }, icon('dice', 56)),
     h('h2', {}, 'Jogue com seus amigos'),
-    h('p', { class: 'muted' }, 'Numa mesa em grupo, uma pessoa é o Mestre e conduz a história. Não usa IA nem precisa de chave do Gemini.'),
+    h('p', { class: 'muted' }, 'Numa mesa em grupo, uma pessoa é o Mestre e conduz a história. Não usa IA nem precisa de chave.'),
     h('ul', { class: 'empty-steps' },
       h('li', {}, h('span', { class: 'step-icon', 'aria-hidden': 'true' }, icon('crown', 26)),
         h('div', {}, h('strong', {}, 'Vai mestrar?'), h('small', {}, 'Crie uma mesa e mande o código para até 6 jogadores.'))),

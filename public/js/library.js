@@ -50,7 +50,7 @@ function renderList() {
           ? [emptyState({
             icon: 'image',
             title: 'As artes da campanha aparecem aqui',
-            text: 'Quando o Mestre IA ilustra um NPC, monstro ou lugar marcante, a imagem fica guardada aqui. Para isso, ligue "Gerar ilustrações" em Configurações (precisa de faturamento ativo na chave do Gemini).',
+            text: 'Quando o Mestre IA ilustra um NPC, monstro ou lugar marcante, a imagem fica guardada aqui. Para isso, ligue "Gerar ilustrações" em Configurações (gerar imagens é pago na chave da IA escolhida).',
             actions: [['Abrir Configurações', () => document.dispatchEvent(new CustomEvent('open-settings')), true], ['Ir para o Jogo', () => goTo('game')]],
           })]
           : [emptyState({ icon: 'map', title: 'Escolha uma campanha', text: 'A Biblioteca mostra as artes de uma campanha por vez.', actions: [['Ver campanhas', () => goTo('campaigns'), true]] })]),

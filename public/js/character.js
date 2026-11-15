@@ -249,7 +249,7 @@ function buildPortraitCard() {
       h('summary', {}, 'Saiba mais'),
       h('ul', {},
         h('li', {}, 'Enviar imagem: PNG, JPG ou WebP. Ela é reduzida no seu aparelho antes de subir.'),
-        h('li', {}, 'Gerar com IA usa o Gemini com a sua chave; o plano gratuito do Google não inclui imagens.'))),
+        h('li', {}, 'Gerar com IA usa a sua chave (em Configurações → Imagens) e é pago pelo uso.'))),
     h('p', { class: 'error', id: 'portrait-error', role: 'alert', hidden: true }),
   );
 }
@@ -693,7 +693,7 @@ async function importSheet(file, { withAi = false } = {}) {
     form.querySelector('#sheet-submit').textContent = 'Criar personagem';
     const note = document.getElementById('import-note');
     note.replaceChildren(
-      h('span', {}, `Ficha lida de "${file.name}"${result.source === 'ia' ? ' pelo Gemini' : ' sem IA'}. Confira as 3 páginas e clique em Criar personagem. Valores que não estavam legíveis ficaram em branco ou automáticos.`),
+      h('span', {}, `Ficha lida de "${file.name}"${result.source === 'ia' ? ' com IA' : ' sem IA'}. Confira as 3 páginas e clique em Criar personagem. Valores que não estavam legíveis ficaram em branco ou automáticos.`),
       ...result.warnings.map((warning) => h('strong', {}, warning)),
       // Lido sem IA e algo veio errado: dá para pedir a leitura pelo Gemini.
       result.source === 'form'
