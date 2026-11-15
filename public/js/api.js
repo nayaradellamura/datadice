@@ -68,20 +68,56 @@ export const settings = {
 };
 
 /** Sessão de login (token JWT e dados do usuário). */
+function readTab(key) {
+  try {
+    return sessionStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function writeTab(key, value) {
+  try {
+    if (value === null || value === '') sessionStorage.removeItem(key);
+    else sessionStorage.setItem(key, value);
+  } catch {
+    // Sem armazenamento da aba: o "Ver como" dura só até recarregar.
+  }
+}
+
+/**
+ * Sessão de login (token JWT e dados do usuário). No "Ver como" do admin, a aba usa o token de
+ * visualização (guardado só nesta aba), sem mexer no login do admin nas outras abas.
+ */
 export const session = {
-  get token() { return readLocal('rpg.token'); },
+  get viewing() { return Boolean(readTab('rpg.view.token')); },
+  get token() { return readTab('rpg.view.token') ?? readLocal('rpg.token'); },
   get user() {
     try {
-      return JSON.parse(readLocal('rpg.user') ?? 'null');
+      return JSON.parse((this.viewing ? readTab('rpg.view.user') : readLocal('rpg.user')) ?? 'null');
     } catch {
       return null;
     }
   },
   save(token, user) {
+    if (this.viewing) {
+      writeTab('rpg.view.token', token);
+      writeTab('rpg.view.user', JSON.stringify(user));
+      return;
+    }
     writeLocal('rpg.token', token);
     writeLocal('rpg.user', JSON.stringify(user));
   },
+  startViewing(token) {
+    writeTab('rpg.view.token', token);
+    writeTab('rpg.view.user', null);
+  },
   clear() {
+    if (this.viewing) {
+      writeTab('rpg.view.token', null);
+      writeTab('rpg.view.user', null);
+      return;
+    }
     writeLocal('rpg.token', null);
     writeLocal('rpg.user', null);
   },
@@ -252,17 +288,19 @@ export function fillSelect(select, items, { placeholder, value } = {}) {
   }
 }
 
+// No "Ver como", as últimas seleções (campanha, mesa...) ficam só na aba, sem mudar as do admin.
+const memory = () => (session.viewing ? sessionStorage : localStorage);
 export const store = {
   get(key) {
     try {
-      return localStorage.getItem(`rpg.${key}`);
+      return memory().getItem(`rpg.${key}`);
     } catch {
       return null;
     }
   },
   set(key, value) {
     try {
-      localStorage.setItem(`rpg.${key}`, value);
+      memory().setItem(`rpg.${key}`, value);
     } catch {
       // Sem armazenamento local, o jogo só não lembra a última seleção.
     }

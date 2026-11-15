@@ -6,7 +6,7 @@ const sent = new Set();
 
 function report(message, source) {
   const text = String(message ?? '').slice(0, 300);
-  if (!text || !session.token || sent.size >= 5 || sent.has(text)) return;
+  if (!text || !session.token || session.viewing || sent.size >= 5 || sent.has(text)) return;
   sent.add(text);
   const view = document.querySelector('.view:not([hidden])')?.id?.replace(/^view-/, '') ?? '';
   fetch('/api/client-error', {

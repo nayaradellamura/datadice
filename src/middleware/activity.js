@@ -73,6 +73,7 @@ const ROUTES = [
   ['POST', /^\/admin\/users\/\d+\/password-reset$/, 'Admin: gerou link de nova senha'],
   ['DELETE', /^\/admin\/users\/\d+$/, 'Admin: removeu uma conta'],
   ['DELETE', /^\/admin\/password-requests\/\d+$/, 'Admin: dispensou pedido de nova senha'],
+  ['POST', /^\/admin\/users\/\d+\/view$/, 'Admin: abriu "Ver como"', { detail: (body) => body?.user?.name }],
   ['POST', /^\/client-error$/, null],
 ];
 
@@ -128,6 +129,8 @@ export function activityLog(db, { console: toConsole = false } = {}) {
     res.on('finish', () => {
       const status = res.statusCode;
       if (info.noisy && status < 400) return;
+      // "Ver como" do admin: não entra na atividade da pessoa (e lá nada pode ser alterado).
+      if (req.viewer) return;
       let detail = null;
       try {
         detail = status < 400 && info.detail ? info.detail(body, req) : null;
@@ -178,7 +181,8 @@ export function touchLastSeen(db) {
   return (req, _res, next) => {
     const id = req.user?.id;
     const now = Date.now();
-    if (id && (recent.get(id) ?? 0) < now - 5 * 60 * 1000) {
+    // O admin olhando a conta não conta como a pessoa ter usado o DataDice.
+    if (id && !req.viewer && (recent.get(id) ?? 0) < now - 5 * 60 * 1000) {
       recent.set(id, now);
       if (recent.size > 5000) recent.clear();
       db.run('UPDATE users SET last_seen_at = now() WHERE id = ?', id)

@@ -1227,3 +1227,8 @@ input, select { min-height: 2.25rem; }
 /* Configurações: escolha da IA e do modelo. */
 .model-row { display: flex; gap: .5rem; align-items: center; }
 .model-row select { flex: 1 1 auto; min-width: 0; }
+
+/* "Ver como" do admin: faixa fixa no topo. */
+.view-banner { position: sticky; top: 0; z-index: 50; display: flex; gap: .75rem; align-items: center; justify-content: space-between;
+  padding: .5rem 16px; background: var(--gold); color: #1c1404; font-weight: 600; font-size: .9rem; }
+.view-banner button { background: #1c1404; color: var(--gold); border-color: #1c1404; flex: 0 0 auto; }

@@ -23,6 +23,15 @@ const VIEWS = admin ? [...PLAYER_VIEWS, ...ADMIN_VIEWS] : PLAYER_VIEWS;
 
 document.body.dataset.auth = 'in';
 document.getElementById('user-name').textContent = user.name;
+// "Ver como" do admin: faixa fixa avisando de quem é a tela e que nada pode ser alterado.
+if (user.viewer) {
+  document.body.dataset.viewing = 'true';
+  const bar = document.getElementById('view-banner');
+  bar.hidden = false;
+  document.getElementById('view-banner-text').textContent = `Vendo como ${user.name} (${user.email}). Só dá para olhar; nada é alterado.`;
+  document.getElementById('view-banner-exit').addEventListener('click', logout);
+  document.title = `Vendo como ${user.name} · DataDice`;
+}
 // Abas restritas nem aparecem para jogadores (o servidor também bloqueia as rotas).
 for (const tab of document.querySelectorAll('[data-admin]')) tab.hidden = !admin;
 for (const view of ADMIN_VIEWS) if (!admin) document.getElementById(`view-${view}`).remove();

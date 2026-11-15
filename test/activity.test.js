@@ -84,3 +84,35 @@ test('mensagens do Mestre IA só entram quando dão erro, e o texto nunca é gra
   assert.ok(chat && chat.status >= 400);
   assert.ok(!(await dumpText(db)).includes('segredo da história'));
 });
+
+test('"Ver como": o admin vê a conta da pessoa por 1 hora, sem conseguir mudar nada', async () => {
+  const admin = await addUser(db, { role: 'admin', name: 'Admin' });
+  const ana = await addUser(db, { name: 'Ana', email: 'ana-ver@teste.dev' });
+  await call(ana, 'POST', '/api/characters', { name: 'Kael', race: 'Humano', class: 'Guerreiro' });
+
+  assert.equal((await call(ana, 'POST', `/api/admin/users/${admin.id}/view`)).status, 403);
+  assert.equal((await call(admin, 'POST', `/api/admin/users/${admin.id}/view`)).status, 400);
+  const view = (await call(admin, 'POST', `/api/admin/users/${ana.id}/view`)).body;
+  const asAna = { token: view.token };
+
+  const me = (await call(asAna, 'GET', '/api/auth/me')).body;
+  assert.deepEqual([me.id, me.name, me.role, me.viewer], [ana.id, 'Ana', 'player', 'Admin']);
+  // Vê o mesmo que a Ana: as fichas dela (e não a lista de todos, que é do admin).
+  assert.deepEqual((await call(asAna, 'GET', '/api/characters')).body.map((c) => c.name), ['Kael']);
+  // Nada muda.
+  const write = await call(asAna, 'POST', '/api/characters', { name: 'Intrusa', race: 'Humano', class: 'Mago' });
+  assert.equal(write.status, 403);
+  assert.equal(write.body.code, 'view_only');
+  assert.equal((await db.get('SELECT COUNT(*)::int AS n FROM characters')).n, 1);
+  assert.equal((await call(asAna, 'GET', '/api/admin/users')).status, 403);
+
+  // Fica registrado que o admin abriu, e o olhar não vira atividade nem "visto por último" da Ana.
+  await settle();
+  const items = (await call(admin, 'GET', '/api/admin/activity')).body.items;
+  assert.ok(items.some((row) => row.action === 'Admin: abriu "Ver como"' && row.detail === 'Ana'));
+  assert.ok(!items.some((row) => row.user_id === ana.id && /Ver como/.test(row.error ?? '')));
+
+  // Deixou de ser admin: o acesso acaba na hora.
+  await db.run(`UPDATE users SET role = 'player' WHERE id = ?`, admin.id);
+  assert.equal((await call(asAna, 'GET', '/api/auth/me')).status, 401);
+});

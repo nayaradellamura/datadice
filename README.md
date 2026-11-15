@@ -170,6 +170,10 @@ O padrão é o Gemini, que é grátis. Em Configurações → "IA do Mestre", a 
 - Imagens continuam só pelo Gemini: quem joga com outra IA pode colar também a chave do Gemini.
 - As chaves ficam só no navegador, como a do Gemini, e vão nos cabeçalhos `x-ai-provider`, `x-ai-key` e `x-ai-model`. O servidor não as guarda.
 
+## Ver como (Painel Admin)
+
+Na lista de contas, "Ver como" abre uma aba nova com a conta da pessoa, exatamente como ela vê (fichas, campanhas, mesas, mensagens privadas), por 1 hora. Nada é copiado: a aba lê os dados na hora. É só para olhar: qualquer tentativa de mudar algo é recusada pelo servidor. A faixa amarela no topo mostra de quem é a tela; "Sair" fecha a aba, e o login do admin nas outras abas continua. Abrir fica registrado na Atividade; o que o admin olha não entra na atividade nem no "Visto" da pessoa. Senha e chaves de IA nunca aparecem: a senha é guardada embaralhada e as chaves ficam só no navegador da própria pessoa.
+
 ## Atividade (Painel Admin)
 
 O Painel Admin mostra o que cada conta fez nos últimos 60 dias: criar conta, entrar (inclusive senha errada), criar e editar fichas, importar PDF (e se foi lida pelo modelo conhecido ou com IA), campanhas, mesas, modelos e as ações do admin. Também aparecem os erros que a pessoa viu e os erros de tela no navegador dela (ex.: um botão que quebrou no celular). Dá para filtrar por conta e por "Só erros". A lista de contas ganhou a coluna "Visto" (último uso).

@@ -136,7 +136,7 @@ export function createApp({
   app.use('/api/client-error', clientErrorRoutes(db, { console: activityConsole }));
   const bigJson = express.json({ limit: '4500kb' });
   app.use((req, res, next) => (bigBody(req) ? bigJson(req, res, next) : next()));
-  app.get('/api/auth/me', (req, res) => res.json(publicUser(req.user)));
+  app.get('/api/auth/me', (req, res) => res.json({ ...publicUser(req.user), ...(req.viewer ? { viewer: req.viewer.name } : {}) }));
   app.use('/api/config', configRoutes({ createLlm }));
   // Ficha em PDF (até 10 MB, lida só depois do login).
   app.use('/api/characters/import', characterImportRoutes(db, { createLlm }));
@@ -153,7 +153,7 @@ export function createApp({
   app.use('/api/chat', needsKey, chatRoutes(db, gameMaster));
   app.use('/api/tokens', tokenRoutes(db));
   app.use('/api/generate-image', needsKey, imageRoutes());
-  app.use('/api/admin', adminRoutes(db, { hub: tableHub }));
+  app.use('/api/admin', adminRoutes(db, { hub: tableHub, jwtSecret }));
   app.use('/api', visualRoutes(db, visuals, needsKey));
   app.use('/api', sessionRoutes(db, gameMaster, needsKey));
   app.use('/api', notFoundApi);

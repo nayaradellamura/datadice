@@ -44,6 +44,15 @@ export async function checkPassword(user, password) {
 export const signToken = (user, secret) =>
   jwt.sign({ userId: user.id, role: user.role, v: user.token_version ?? 0 }, secret, { algorithm: 'HS256', expiresIn: TOKEN_TTL });
 
+/**
+ * "Ver como" do admin: entra na conta de outra pessoa só para olhar, por 1 hora. O token leva quem está
+ * olhando (viewer) e só permite leituras. Senha e chaves de IA nunca aparecem: a senha é guardada
+ * embaralhada e as chaves ficam só no navegador da própria pessoa.
+ */
+export const VIEW_TTL_SECONDS = 60 * 60;
+export const signViewToken = (user, admin, secret) =>
+  jwt.sign({ userId: user.id, v: user.token_version ?? 0, viewer: admin.id }, secret, { algorithm: 'HS256', expiresIn: VIEW_TTL_SECONDS });
+
 export const verifyToken = (token, secret) => jwt.verify(token, secret, { algorithms: ['HS256'] });
 
 export const publicUser = ({ id, name, email, role }) => ({ id, name, email, role });

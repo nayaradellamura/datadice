@@ -20,6 +20,16 @@ export function authenticateToken(db, secret) {
     // Senha trocada depois deste login: o token antigo não vale mais.
     if (!user || (payload.v ?? 0) !== user.token_version) throw authError('Sua sessão expirou. Entre de novo.');
     delete user.token_version;
+    // "Ver como": o admin olha a conta da pessoa, sem poder mudar nada. Deixou de ser admin, o acesso acaba.
+    if (payload.viewer !== undefined) {
+      const viewer = Number.isInteger(payload.viewer)
+        && (await db.get(`SELECT id, name FROM users WHERE id = ? AND role = 'admin' AND password_hash IS NOT NULL`, payload.viewer));
+      if (!viewer) throw authError('O acesso de visualização acabou.');
+      if (!['GET', 'HEAD'].includes(req.method)) {
+        throw new HttpError(403, 'Você está no modo "Ver como": só dá para olhar, nada é alterado na conta da pessoa.', 'view_only');
+      }
+      req.viewer = viewer;
+    }
     req.user = user;
     // Quando o login vence (em segundos desde 1970). O tempo real das mesas fecha o canal nessa hora.
     req.tokenExpiresAt = Number.isInteger(payload.exp) ? payload.exp * 1000 : null;

@@ -10,7 +10,15 @@ export async function requireLogin() {
     history.replaceState(null, '', location.pathname + location.search);
     session.clear();
   }
+  // "Ver como" (aberto pelo Painel Admin): #ver-como=<token>. O token sai da barra de endereço na hora
+  // e fica só nesta aba.
+  const viewToken = /^#ver-como=([\w-]+\.[\w-]+\.[\w-]+)$/.exec(location.hash)?.[1];
+  if (viewToken) {
+    history.replaceState(null, '', location.pathname + location.search);
+    session.startViewing(viewToken);
+  }
   if (session.token) {
+    const viewing = session.viewing;
     try {
       const user = await api('/auth/me');
       session.save(session.token, user);
@@ -18,6 +26,12 @@ export async function requireLogin() {
     } catch (err) {
       if (err.code !== 'auth') throw err;
       session.clear();
+      // Acabou a hora do "Ver como": a aba volta para a conta do admin.
+      if (viewing) {
+        window.alert('O acesso "Ver como" acabou (dura 1 hora). Abra de novo pelo Painel Admin.');
+        location.reload();
+        await new Promise(() => {});
+      }
     }
   }
 
@@ -136,7 +150,10 @@ function showReset(token, resolve) {
 }
 
 export function logout() {
+  // No "Ver como", "Sair" só fecha a visualização (o login do admin continua nas outras abas).
+  const viewing = session.viewing;
   session.clear();
+  if (viewing) window.close();
   location.reload();
 }
 

@@ -1,11 +1,11 @@
 import { Router } from 'express';
 import { requireAdmin } from '../middleware/auth.js';
 import { HttpError } from '../middleware/errorHandler.js';
-import { createPasswordReset, ROLES } from '../services/auth.js';
+import { createPasswordReset, publicUser, ROLES, signViewToken, VIEW_TTL_SECONDS } from '../services/auth.js';
 import { asId } from '../http/validate.js';
 import { deleteImageIfUnused } from '../services/imageStore.js';
 
-export function adminRoutes(db, { hub } = {}) {
+export function adminRoutes(db, { hub, jwtSecret } = {}) {
   const router = Router();
   router.use(requireAdmin);
 
@@ -59,6 +59,22 @@ export function adminRoutes(db, { hub } = {}) {
       ...params,
     );
     res.json({ items: rows.slice(0, 100), more: rows.length > 100 });
+  });
+
+  /**
+   * "Ver como": acesso de 1 hora para ver exatamente o que a pessoa vê, sem poder mudar nada.
+   * Nada é copiado: a tela do admin lê os dados da conta na hora.
+   */
+  router.post('/users/:id/view', async (req, res) => {
+    const id = asId(req.params.id);
+    if (id && id === req.user.id) throw new HttpError(400, 'Essa já é a sua conta.');
+    const user = id && (await db.get('SELECT id, name, email, role, token_version FROM users WHERE id = ? AND password_hash IS NOT NULL', id));
+    if (!user) throw new HttpError(404, 'Usuário não encontrado.');
+    res.status(201).json({
+      token: signViewToken(user, req.user, jwtSecret),
+      user: publicUser(user),
+      expires_at: new Date(Date.now() + VIEW_TTL_SECONDS * 1000).toISOString(),
+    });
   });
 
   // Pedidos de "Esqueci minha senha" ainda não atendidos.

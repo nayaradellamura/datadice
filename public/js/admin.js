@@ -225,13 +225,31 @@ function activityCard(users) {
 
   return h('div', { class: 'card activity-card' },
     h('h3', {}, 'Atividade'),
-    h('p', { class: 'muted small-print' }, 'O que cada conta fez e o que deu erro, dos últimos 60 dias. Mensagens, rolagens e anotações só aparecem quando dão erro; o conteúdo delas nunca é gravado.'),
+    h('p', { class: 'muted small-print' }, 'Para ver a tela de alguém exatamente como a pessoa vê, use "Ver como" na lista de contas. O que cada conta fez e o que deu erro, dos últimos 60 dias. Mensagens, rolagens e anotações só aparecem quando dão erro; o conteúdo delas nunca é gravado.'),
     h('div', { class: 'activity-filters' },
       h('label', {}, 'Conta', who),
       h('label', { class: 'check' }, errorsOnly, ' Só erros')),
     status,
     list,
     more);
+}
+
+/**
+ * "Ver como": abre uma aba nova com a conta da pessoa, do jeito que ela vê, só para olhar (1 hora).
+ * A aba abre antes da resposta do servidor, senão o navegador do celular bloqueia como pop-up.
+ */
+async function viewAs(user) {
+  showError(el('admin-error'), null);
+  const tab = window.open('about:blank', '_blank');
+  try {
+    const { token } = await api(`/admin/users/${user.id}/view`, { method: 'POST' });
+    const url = `${location.origin}${location.pathname}#ver-como=${token}`;
+    if (tab) tab.location.href = url;
+    else location.href = url;
+  } catch (err) {
+    tab?.close();
+    showError(el('admin-error'), err);
+  }
 }
 
 /** Remove a conta, depois de confirmar o que vai junto. */
@@ -289,6 +307,9 @@ export async function renderAdmin() {
             },
             h('option', { value: 'player', selected: row.role === 'player' }, 'Jogador'),
             h('option', { value: 'admin', selected: row.role === 'admin' }, 'Admin'))],
+          ['Ver', (row) => row.id === session.user?.id
+            ? h('span', { class: 'muted' }, '—')
+            : h('button', { type: 'button', class: 'small', onclick: () => viewAs(row) }, 'Ver como')],
           ['Senha', (row) => row.id === session.user?.id
             ? h('span', { class: 'muted' }, '—')
             : h('button', { type: 'button', class: 'small', onclick: () => makeResetLink(row) }, 'Link de nova senha')],
