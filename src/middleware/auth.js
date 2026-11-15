@@ -1,3 +1,4 @@
+import { cleanModel, isProvider, PROVIDERS } from '../services/aiProviders.js';
 import { verifyToken } from '../services/auth.js';
 import { HttpError } from './errorHandler.js';
 
@@ -55,15 +56,46 @@ export function readGeminiKey(req) {
   return key;
 }
 
+// Chaves de outras IAs: OpenAI (sk-...), Anthropic (sk-ant-...), OpenRouter (sk-or-...).
+const OTHER_KEY_PATTERN = /^[A-Za-z0-9._-]{20,400}$/;
+
 /**
- * BYOK: cada requisição traz a chave do próprio jogador no header "x-gemini-key". Ela só fica na
- * memória enquanto a requisição e as imagens pedidas por ela estão em andamento; nunca é gravada nem vai para o log.
+ * Qual IA o jogador escolheu (header "x-ai-provider"; sem ele, Gemini) e a chave dela. O Gemini usa
+ * "x-gemini-key"; as outras, "x-ai-key". O modelo escolhido vem em "x-ai-model" (opcional).
+ */
+export function readAiChoice(req, { required = true } = {}) {
+  const asked = (req.get('x-ai-provider') ?? '').trim();
+  const provider = isProvider(asked) ? asked : 'gemini';
+  if (provider === 'gemini') {
+    if (!required && !(req.get('x-gemini-key') ?? '').trim()) return null;
+    return { provider, key: readGeminiKey(req), model: null };
+  }
+  const { label } = PROVIDERS[provider];
+  const key = (req.get('x-ai-key') ?? '').trim();
+  if (!key) {
+    if (!required) return null;
+    throw new HttpError(401, `Configure sua chave do ${label} em Configurações (ícone de engrenagem) para jogar.`, 'gemini_key');
+  }
+  if (!OTHER_KEY_PATTERN.test(key)) {
+    throw new HttpError(401, `A chave colada não parece uma chave do ${label}. Copie de novo só a chave, sem aspas nem espaços.`, 'gemini_key');
+  }
+  return { provider, key, model: cleanModel(req.get('x-ai-model')) };
+}
+
+/** Chave do Gemini só para as imagens (quem joga com outra IA pode colar as duas). */
+const optionalGeminiKey = (req) => ((req.get('x-gemini-key') ?? '').trim() ? readGeminiKey(req) : null);
+
+/**
+ * BYOK: cada requisição traz a chave do próprio jogador nos headers. Ela só fica na memória enquanto a
+ * requisição e as imagens pedidas por ela estão em andamento; nunca é gravada nem vai para o log.
+ * Imagens são sempre do Gemini: sem chave do Gemini, req.images fica null.
  */
 export function requireGeminiKey({ createLlm, createImages }) {
   return (req, _res, next) => {
-    const key = readGeminiKey(req);
-    req.llm = createLlm(key);
-    req.images = createImages(key, req.user);
+    const choice = readAiChoice(req);
+    req.llm = createLlm(choice.key, choice);
+    const imageKey = choice.provider === 'gemini' ? choice.key : optionalGeminiKey(req);
+    req.images = imageKey ? createImages(imageKey, req.user) : null;
     next();
   };
 }

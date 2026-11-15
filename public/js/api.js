@@ -42,10 +42,26 @@ export function cleanKey(value) {
     .replace(/^["'`]+|["'`]+$/g, '');
 }
 
+export const AI_PROVIDERS = { gemini: 'Gemini', openai: 'ChatGPT (OpenAI)', anthropic: 'Claude (Anthropic)', openrouter: 'OpenRouter' };
+
 /** Configurações do jogador, guardadas só neste navegador. */
 export const settings = {
   get apiKey() { return readLocal('gemini_api_key') ?? ''; },
   set apiKey(value) { writeLocal('gemini_api_key', cleanKey(value)); },
+  // Qual IA conduz o Mestre: gemini (padrão), openai, anthropic ou openrouter.
+  get provider() {
+    const value = readLocal('ai_provider');
+    return Object.hasOwn(AI_PROVIDERS, value) ? value : 'gemini';
+  },
+  set provider(value) { writeLocal('ai_provider', Object.hasOwn(AI_PROVIDERS, value) ? value : 'gemini'); },
+  /** Chave e modelo de cada outra IA (cada uma guarda a sua). */
+  otherKey(provider) { return readLocal(`ai_key_${provider}`) ?? ''; },
+  setOtherKey(provider, value) { writeLocal(`ai_key_${provider}`, cleanKey(value)); },
+  model(provider) { return readLocal(`ai_model_${provider}`) ?? ''; },
+  setModel(provider, value) { writeLocal(`ai_model_${provider}`, value); },
+  /** A chave da IA escolhida (é ela que o Mestre usa para responder). */
+  get textKey() { return this.provider === 'gemini' ? this.apiKey : this.otherKey(this.provider); },
+  get providerLabel() { return AI_PROVIDERS[this.provider]; },
   // Desligado por padrão: a geração de imagens do Gemini não tem cota gratuita.
   get imagesEnabled() { return readLocal('enable_image_gen') === 'true'; },
   set imagesEnabled(value) { writeLocal('enable_image_gen', value ? 'true' : 'false'); },
@@ -93,11 +109,18 @@ export async function api(path, { method = 'GET', body, gemini = false } = {}) {
   if (body !== undefined) headers['content-type'] = raw ? (body.type || 'application/octet-stream') : 'application/json';
   if (session.token) headers.authorization = `Bearer ${session.token}`;
   // 'optional': manda a chave se houver; o servidor decide se precisa dela.
-  if (gemini === 'optional') {
+  if (gemini) {
+    const provider = settings.provider;
+    if (gemini !== 'optional' && !settings.textKey) {
+      throw apiError(`Configure sua chave do ${settings.providerLabel} em Configurações (ícone de engrenagem) para jogar.`, 'gemini_key', 0);
+    }
+    if (provider !== 'gemini' && settings.textKey) {
+      headers['x-ai-provider'] = provider;
+      headers['x-ai-key'] = settings.textKey;
+      if (settings.model(provider)) headers['x-ai-model'] = settings.model(provider);
+    }
+    // A chave do Gemini também vale para as imagens, mesmo jogando com outra IA.
     if (settings.apiKey) headers['x-gemini-key'] = settings.apiKey;
-  } else if (gemini) {
-    if (!settings.apiKey) throw apiError('Configure sua chave do Gemini em Configurações (ícone de engrenagem) para jogar.', 'gemini_key', 0);
-    headers['x-gemini-key'] = settings.apiKey;
   }
   let response;
   try {

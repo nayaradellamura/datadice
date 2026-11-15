@@ -134,7 +134,7 @@ export const TOURS = [
     async start() { await ctx.showView('campaigns'); },
     cleanup() { if (visible(el('campaign-close'))) click('#campaign-close'); },
     steps: [
-      { skipIf: () => Boolean(settings.apiKey), target: () => el('settings-open'), title: 'Antes de tudo: a chave', text: 'Você ainda não colou a sua chave do Gemini, e sem ela o Mestre IA não responde. O treinamento "Chave do Gemini" mostra como pegar a sua, de graça.' },
+      { skipIf: () => Boolean(settings.textKey), target: () => el('settings-open'), title: 'Antes de tudo: a chave', text: 'Você ainda não colou a sua chave do Gemini, e sem ela o Mestre IA não responde. O treinamento "Chave do Gemini" mostra como pegar a sua, de graça.' },
       { target: () => firstVisible('#campaign-new', '#campaign-list .empty-hero button'), title: 'Campanhas', text: 'Uma campanha é o mundo onde a sua aventura acontece. O Mestre IA lembra de tudo o que acontece nela.' },
       { prepare: () => click('#campaign-new'), target: () => firstVisible('#campaign-mode'), title: 'Com IA ou do zero', text: 'A IA pode criar o mundo para você, ou você escreve tudo do seu jeito.' },
       { target: () => firstVisible('#campaign-themes'), title: 'Tema, tom e duração', text: 'Escolha o tema (fantasia, terror, piratas...), o tom e se é uma aventura curta ou uma campanha longa. Pode dar uma ideia também.' },

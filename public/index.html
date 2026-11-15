@@ -115,7 +115,45 @@
     </div>
     <div id="settings-pane-key" role="tabpanel" aria-labelledby="settings-tab-key">
     <section class="settings-section">
-      <h3><label for="settings-key">Chave do Gemini</label></h3>
+      <h3><label for="settings-provider">IA do Mestre</label></h3>
+      <select id="settings-provider">
+        <option value="gemini">Gemini (Google): grátis</option>
+        <option value="openai">ChatGPT (OpenAI): pago</option>
+        <option value="anthropic">Claude (Anthropic): pago</option>
+        <option value="openrouter">OpenRouter: vários modelos, alguns grátis</option>
+      </select>
+      <p id="settings-provider-note" class="muted small-print"></p>
+    </section>
+    <section class="settings-section" id="settings-other" hidden>
+      <h3><label for="settings-other-key" id="settings-other-title">Chave da IA</label></h3>
+      <div class="password-field">
+        <input id="settings-other-key" type="password" autocomplete="off" spellcheck="false" placeholder="Cole aqui sua chave de API">
+        <button type="button" class="eye-toggle" id="settings-other-toggle" aria-pressed="false" aria-controls="settings-other-key" aria-label="Mostrar chave" title="Mostrar chave">
+              <svg class="eye-open" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+              <svg class="eye-closed" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M10.6 5.1A10.7 10.7 0 0 1 12 5c6.4 0 10 7 10 7a17.6 17.6 0 0 1-2.9 3.9M6.6 6.6A17.4 17.4 0 0 0 2 12s3.6 7 10 7a9.7 9.7 0 0 0 5.4-1.6"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/><path d="m3 3 18 18"/></svg>
+            </button>
+      </div>
+      <label for="settings-model">Modelo</label>
+      <div class="model-row">
+        <select id="settings-model"></select>
+        <button type="button" id="settings-models-load" class="small">Carregar lista</button>
+      </div>
+      <div class="settings-actions">
+        <button type="button" id="settings-other-test" class="primary">Testar conexão</button>
+        <a class="button" id="settings-other-link" href="#" target="_blank" rel="noopener noreferrer">Obter chave ↗</a>
+      </div>
+      <p id="settings-other-status" class="key-status" role="status" hidden></p>
+      <details class="more">
+        <summary>Saiba mais</summary>
+        <ul>
+          <li>A chave de API é <strong>cobrada à parte</strong> da assinatura do app (ChatGPT Plus ou Claude Pro não valem aqui). Você paga pelo uso, direto para a empresa.</li>
+          <li>A chave fica salva só neste navegador. O servidor não a guarda.</li>
+          <li>Imagens são sempre do Gemini: para tê-las, cole também a chave do Gemini abaixo.</li>
+        </ul>
+      </details>
+    </section>
+    <section class="settings-section">
+      <h3><label for="settings-key" id="settings-key-title">Chave do Gemini</label></h3>
       <div class="password-field">
         <input id="settings-key" type="password" autocomplete="off" spellcheck="false" placeholder="Cole aqui sua chave">
         <button type="button" class="eye-toggle" id="settings-key-toggle" aria-pressed="false" aria-controls="settings-key" aria-label="Mostrar chave" title="Mostrar chave">

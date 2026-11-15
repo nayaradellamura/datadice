@@ -1,5 +1,5 @@
 import express, { Router } from 'express';
-import { readGeminiKey } from '../middleware/auth.js';
+import { readAiChoice } from '../middleware/auth.js';
 import { rateLimit } from '../middleware/rateLimit.js';
 import { logTokens } from '../services/gameMaster.js';
 import { importCharacterPdf, MAX_PDF_BYTES } from '../services/sheetImport.js';
@@ -14,7 +14,8 @@ export function characterImportRoutes(db, { createLlm }) {
   const pdfBody = express.raw({ type: 'application/pdf', limit: MAX_PDF_BYTES });
 
   router.post('/', limiter, pdfBody, async (req, res) => {
-    const llm = req.get('x-gemini-key') ? createLlm(readGeminiKey(req)) : null;
+    const choice = readAiChoice(req, { required: false });
+    const llm = choice ? createLlm(choice.key, choice) : null;
     const result = await importCharacterPdf(Buffer.isBuffer(req.body) ? req.body : Buffer.alloc(0), {
       llm,
       // ?ia=1: o jogador pediu para ler com IA mesmo sendo um modelo que o DataDice conhece.

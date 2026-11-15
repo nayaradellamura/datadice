@@ -22,6 +22,7 @@ import { visualRoutes } from './routes/visuals.js';
 import { publicUser } from './services/auth.js';
 import { imageFileRoutes, saveImage } from './services/imageStore.js';
 import { createGameMaster } from './services/gameMaster.js';
+import { createAnthropicClient, createOpenAiClient } from './services/aiProviders.js';
 import { createGeminiClient } from './services/gemini.js';
 import { createGeminiImageClient } from './services/geminiImages.js';
 import { createVisuals } from './services/visuals.js';
@@ -82,7 +83,12 @@ export function createApp({
 }) {
   if (!jwtSecret) throw new Error('jwtSecret é obrigatório.');
   const app = express();
-  const createLlm = llm ? () => llm : (apiKey) => createGeminiClient({ apiKey, model: textModel });
+  // A IA de texto que o jogador escolheu (Gemini, ChatGPT, Claude ou OpenRouter), com a chave dele.
+  const createLlm = llm ? () => llm : (apiKey, { provider = 'gemini', model = null } = {}) => {
+    if (provider === 'anthropic') return createAnthropicClient({ apiKey, ...(model ? { model } : {}) });
+    if (provider === 'openai' || provider === 'openrouter') return createOpenAiClient({ apiKey, provider, model });
+    return createGeminiClient({ apiKey, model: textModel });
+  };
   // As imagens geradas vão para o banco, registradas em nome de quem pediu.
   const createImages = images ? () => images : (apiKey, user) => createGeminiImageClient({
     apiKey,

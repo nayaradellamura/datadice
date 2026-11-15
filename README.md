@@ -162,6 +162,14 @@ Em **Personagens**, **Importar PDF** lê uma ficha e abre o formulário já pree
 - Proficiências são deduzidas dos bônus escritos; um valor que não bate com o cálculo vira ajuste manual.
 - Limites: 10 MB, 12 páginas, 6 importações por minuto. O PDF é só lido (sem scripts, sem XFA) e não é guardado.
 
+## Outras IAs (ChatGPT, Claude, OpenRouter)
+
+O padrão é o Gemini, que é grátis. Em Configurações → "IA do Mestre", a pessoa pode trocar para ChatGPT (OpenAI), Claude (Anthropic) ou OpenRouter, colar a chave de API dessa empresa e escolher o modelo ("Carregar lista" mostra os modelos que a chave pode usar; no OpenRouter, os grátis aparecem primeiro). A chave de API é cobrada à parte da assinatura do app (ChatGPT Plus e Claude Pro não valem). Entrar com a conta (login) não é possível: esses serviços não deixam outro site usar a assinatura.
+
+- Padrões: ChatGPT `gpt-5.4-mini`, Claude `claude-opus-5-5` (com Sonnet 5.5 e Haiku 5.5 na lista). No Claude Opus e Sonnet, se o filtro de segurança recusar uma cena, a própria Anthropic tenta de novo com outro modelo Claude (troca automática).
+- Imagens continuam só pelo Gemini: quem joga com outra IA pode colar também a chave do Gemini.
+- As chaves ficam só no navegador, como a do Gemini, e vão nos cabeçalhos `x-ai-provider`, `x-ai-key` e `x-ai-model`. O servidor não as guarda.
+
 ## Atividade (Painel Admin)
 
 O Painel Admin mostra o que cada conta fez nos últimos 60 dias: criar conta, entrar (inclusive senha errada), criar e editar fichas, importar PDF (e se foi lida pelo modelo conhecido ou com IA), campanhas, mesas, modelos e as ações do admin. Também aparecem os erros que a pessoa viu e os erros de tela no navegador dela (ex.: um botão que quebrou no celular). Dá para filtrar por conta e por "Só erros". A lista de contas ganhou a coluna "Visto" (último uso).

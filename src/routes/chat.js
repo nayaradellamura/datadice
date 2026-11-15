@@ -7,7 +7,8 @@ import { getParty } from '../services/promptBuilder.js';
 export const turnOptions = (req) => ({
   llm: req.llm,
   images: req.images,
-  illustrate: req.body?.enable_image_gen === true,
+  // Imagens só com chave do Gemini (quem joga com outra IA pode colar as duas).
+  illustrate: req.body?.enable_image_gen === true && Boolean(req.images),
   userId: req.user.id,
 });
 
