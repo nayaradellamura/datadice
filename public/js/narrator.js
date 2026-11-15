@@ -32,7 +32,7 @@ export const narration = {
   set voice(value) { writeLocal('narration_voice', value); },
   get rate() {
     const value = Number(readLocal('narration_rate'));
-    return value >= 0.5 && value <= 2 ? value : 1;
+    return value >= 0.5 && value <= 2.5 ? value : 1;
   },
   set rate(value) { writeLocal('narration_rate', String(value)); },
 };
@@ -83,7 +83,11 @@ function setButton(button, speaking) {
   if (!button) return;
   button.classList.toggle('speaking', speaking);
   button.setAttribute('aria-pressed', String(speaking));
-  button.replaceChildren(icon(speaking ? 'stop' : 'volume', 16), speaking ? 'Parar' : 'Ouvir');
+  // Botão "Ouvir" das falas: só o ícone. O de exemplo (Configurações) mantém o texto.
+  const label = speaking ? 'Parar' : 'Ouvir';
+  button.setAttribute('aria-label', label);
+  button.title = speaking ? 'Parar a narração' : 'Ouvir a narração';
+  button.replaceChildren(icon(speaking ? 'stop' : 'volume', 15), ...(button.classList.contains('msg-listen') ? [] : [label]));
 }
 
 export function stopNarration() {

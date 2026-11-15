@@ -1324,3 +1324,11 @@ body[data-mode="home"]:not(:has(#admin-menu-button:not([hidden]))) .topbar nav {
 .tour-between .tour-actions { justify-content: flex-end; }
 .tour-layer:not(:has(.tour-spot)) { background: rgb(0 0 0 / .62); }
 .home-card { cursor: pointer; }
+
+/* Narração: botão "Ouvir" pequeno, só o ícone, embaixo da fala do Mestre. */
+.msg-listen { display: grid; place-items: center; width: 28px; height: 28px; min-height: 0; padding: 0; margin-top: .35rem;
+  border-radius: 50%; background: transparent; border: 1px solid var(--line); color: var(--muted); }
+.msg-listen:hover { color: var(--text); border-color: var(--muted); }
+.msg-listen.speaking { color: var(--accent); border-color: var(--accent); }
+.narration-row { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: .5rem; }
+#narration-test.speaking { color: var(--accent); border-color: var(--accent); }

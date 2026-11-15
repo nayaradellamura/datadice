@@ -227,9 +227,16 @@ function markDone(id) {
 /** "Primeiros passos" ainda não foi feito: o treinamento está pendente. */
 export const firstStepsPending = () => !doneSet().has('inicio');
 
-/** Bolinha no botão de ajuda enquanto o "Primeiros passos" estiver pendente. */
+/** Algum módulo do treinamento ainda não foi concluído. */
+const anyPending = () => availableTours().some((tour) => !doneSet().has(tour.id));
+
+/** Bolinha no botão de ajuda enquanto houver módulo de treinamento pendente. */
 function updateHint() {
-  el('tours-open')?.classList.toggle('has-hint', firstStepsPending());
+  const button = el('tours-open');
+  if (!button) return;
+  const pending = anyPending();
+  button.classList.toggle('has-hint', pending);
+  button.title = pending ? 'Treinamentos (há módulos pendentes)' : 'Treinamentos';
 }
 
 /** Começa o "Primeiros passos" (botão do cartão de boas-vindas do Início). */

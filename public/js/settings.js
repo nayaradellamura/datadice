@@ -155,8 +155,10 @@ function renderNarration() {
     return;
   }
   el('narration-auto').checked = narration.auto;
-  el('narration-rate').value = String(narration.rate);
-  if (!el('narration-rate').value) el('narration-rate').value = '1';
+  // Velocidade salva que não existe mais na lista (ex.: 1.15 antiga): fica na mais próxima.
+  const rates = [...el('narration-rate').options].map((option) => Number(option.value));
+  const closest = rates.reduce((best, rate) => (Math.abs(rate - narration.rate) < Math.abs(best - narration.rate) ? rate : best), 1);
+  el('narration-rate').value = String(closest);
   const voices = portugueseVoices();
   const select = el('narration-voice');
   select.replaceChildren(...(voices.length
@@ -274,7 +276,11 @@ export function initSettings() {
     renderNotes();
   });
   el('narration-voice').addEventListener('change', (event) => { narration.voice = event.target.value; });
-  el('narration-rate').addEventListener('change', (event) => { narration.rate = Number(event.target.value); });
+  // Trocou a velocidade: já toca o exemplo nela, para a pessoa ouvir a diferença.
+  el('narration-rate').addEventListener('change', (event) => {
+    narration.rate = Number(event.target.value);
+    speak('Assim fica a velocidade da narração.', el('narration-test'));
+  });
   el('narration-test').addEventListener('click', () =>
     speak('A porta da taverna range. Um anão de barba ruiva levanta os olhos da caneca e sorri: — Finalmente, aventureiros!', el('narration-test')));
   document.addEventListener('voices-changed', () => {
