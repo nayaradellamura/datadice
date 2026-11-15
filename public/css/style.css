@@ -1272,30 +1272,25 @@ header h1 { cursor: pointer; }
   .mode-switch-top button svg { flex: none; }
 }
 
-/* Início: os dois cartões. */
-.home { display: flex; flex-direction: column; gap: 1rem; }
-.home-head p { margin: .25rem 0 0; }
-.home-modes { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 1rem; }
-.home-card { display: flex; flex-direction: column; gap: .7rem; padding: 1.1rem; background: var(--panel); border: 1px solid var(--line); border-top: 5px solid var(--card-color); border-radius: 14px; }
+/* Início: tela limpa, sem menus. Dois cartões com ilustração, título, uma linha e os botões. */
+body[data-mode="home"] .topbar nav, body[data-mode="home"] #mode-switch { display: none; }
+.home { display: flex; flex-direction: column; align-items: center; gap: 1.25rem; padding-block: 1rem 2rem; }
+.home-title { text-align: center; font-size: clamp(1.5rem, 4vw, 2.1rem); }
+.home-modes { width: min(100%, 860px); display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 1.1rem; }
+.home-card { display: flex; flex-direction: column; overflow: hidden; background: var(--panel); border: 1px solid var(--line); border-radius: 18px;
+  transition: transform .15s ease, border-color .15s ease; }
+.home-card:hover { transform: translateY(-2px); border-color: var(--card-color); }
 .home-card.mode-ia { --card-color: var(--ia); --accent: var(--ia); --accent-ink: var(--ia-ink); }
 .home-card.mode-mesa { --card-color: var(--mesa); --accent: var(--mesa); --accent-ink: var(--mesa-ink); }
-.home-card p { margin: 0; }
-.home-card-head { display: flex; gap: .8rem; align-items: center; }
-.home-card-head h3 { font-size: 1.35rem; color: var(--card-color); }
-.home-icon { flex: none; color: var(--card-color); padding: .45rem; border-radius: 12px; background: var(--panel-2); width: 52px; height: 52px; }
-.home-tag { color: var(--muted); font-size: .9rem; }
-.home-facts { margin: 0; padding-left: 1.1rem; color: var(--muted); font-size: .92rem; display: grid; gap: .2rem; }
-.home-status { font-size: .9rem; padding: .5rem .7rem; border-radius: 8px; background: var(--input); border: 1px solid var(--line); }
-.home-actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: auto; }
+.home-art-box { position: relative; background: linear-gradient(180deg, var(--panel-2), var(--panel)); border-bottom: 1px solid var(--line); }
+.home-art { display: block; width: 100%; height: auto; max-height: 190px; }
+.home-count { position: absolute; top: .7rem; right: .7rem; padding: .2rem .6rem; border-radius: 999px; font-size: .78rem; font-weight: 600;
+  background: var(--card-color); color: var(--accent-ink); }
+.home-body { display: flex; flex-direction: column; gap: .5rem; padding: 1rem 1.1rem 1.15rem; flex: 1; }
+.home-body h3 { font-size: 1.45rem; color: var(--card-color); }
+.home-body p { margin: 0; color: var(--muted); }
+.home-status { font-size: .85rem; }
+.home-actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: auto; padding-top: .4rem; }
 .home-actions button { flex: 1 1 auto; }
 .home-actions .primary { flex-basis: 100%; }
-.home-tip { text-align: center; }
-
-/* Narração: botão "Ouvir" nas falas do Mestre e configurações de voz. */
-.msg-listen { display: inline-flex; align-items: center; gap: .3rem; margin-top: .45rem; padding: .25rem .6rem; min-height: 32px;
-  font-size: .8rem; border-radius: 999px; background: transparent; border: 1px solid var(--line); color: var(--muted); }
-.msg-listen:hover { color: var(--text); border-color: var(--muted); }
-.msg-listen.speaking { color: var(--accent); border-color: var(--accent); }
-.msg .msg-listen { display: flex; width: fit-content; }
-.narration-row { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: .5rem; }
-#narration-test.speaking { color: var(--accent); border-color: var(--accent); }
+@media (prefers-reduced-motion: reduce) { .home-card, .home-card:hover { transition: none; transform: none; } }

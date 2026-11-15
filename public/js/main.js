@@ -81,18 +81,17 @@ async function renderHome() {
     api('/tables').catch(() => []),
   ]);
   const mine = campaigns.filter((campaign) => campaign.user_id === undefined || campaign.user_id === user.id);
+  const count = (id, n, one, many) => {
+    const badge = document.getElementById(id);
+    badge.hidden = !n;
+    badge.textContent = `${n} ${n === 1 ? one : many}`;
+  };
+  count('home-ia-count', mine.length, 'campanha', 'campanhas');
+  count('home-mesa-count', tables.length, 'mesa', 'mesas');
   const iaStatus = document.getElementById('home-ia-status');
-  iaStatus.hidden = false;
-  iaStatus.textContent = [
-    mine.length ? `Você tem ${mine.length} ${mine.length === 1 ? 'campanha' : 'campanhas'}.` : 'Nenhuma campanha ainda: comece criando uma.',
-    hasKey ? `Chave do ${settings.providerLabel} configurada.` : 'Falta colocar a chave de IA.',
-  ].join(' ');
-  document.getElementById('home-ia-go').textContent = mine.length ? 'Continuar no Mestre IA' : 'Jogar com o Mestre IA';
-  const mesaStatus = document.getElementById('home-mesa-status');
-  mesaStatus.hidden = false;
-  mesaStatus.textContent = tables.length
-    ? `Você está em ${tables.length} ${tables.length === 1 ? 'mesa' : 'mesas'}.`
-    : 'Nenhuma mesa ainda: crie uma e chame os amigos, ou entre com o código que o Mestre mandou.';
+  iaStatus.hidden = hasKey;
+  iaStatus.textContent = 'Precisa de uma chave de IA. A do Gemini é grátis.';
+  document.getElementById('home-ia-go').textContent = mine.length ? 'Continuar' : 'Jogar';
   document.getElementById('home-mesa-go').hidden = !tables.length;
 }
 
