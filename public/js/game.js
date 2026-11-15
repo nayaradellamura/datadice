@@ -1,5 +1,6 @@
 import { api, campaignLabel, fillSelect, formatText, h, inventoryList, settings, showError, signed, store } from './api.js';
 import { icon } from './icons.js';
+import { isD20Roll, rollWithFx } from './dice-fx.js';
 import { openSheetView } from './sheet-view.js';
 import { illustrationFigure, notifyVisualFinished } from './visual.js';
 
@@ -118,7 +119,10 @@ function initJumpButton() {
 async function roll(body) {
   showError(el('chat-error'), null);
   try {
-    const result = await api(`/campaigns/${campaignId()}/roll`, { method: 'POST', body: { character_id: characterId(), ...body } });
+    const result = await rollWithFx(
+      () => api(`/campaigns/${campaignId()}/roll`, { method: 'POST', body: { character_id: characterId(), ...body } }),
+      { d20: isD20Roll(body) },
+    );
     el('chat-log').querySelector('.empty')?.remove();
     addMessage('system', null, result.message_text);
     el('chat-log').scrollTop = el('chat-log').scrollHeight;

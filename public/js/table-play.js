@@ -1,5 +1,6 @@
 import { api, emptyState, formatText, h, session, showError, signed, store } from './api.js';
 import { icon } from './icons.js';
+import { isD20Roll, rollWithFx } from './dice-fx.js';
 import { openSheetView } from './sheet-view.js';
 import { MONSTER_PRESETS, NPC_PRESETS } from './table-presets.js';
 
@@ -348,7 +349,7 @@ async function sendImage(file) {
 async function roll(body) {
   showError(el('table-error'), null);
   try {
-    const result = await api(tableUrl('/roll'), { method: 'POST', body: { ...body, secret: secretRoll } });
+    const result = await rollWithFx(() => api(tableUrl('/roll'), { method: 'POST', body: { ...body, secret: secretRoll } }), { d20: isD20Roll(body) });
     addMessages([result]);
     if (body.kind === 'attack') criticalWeapon = result.critical ? body.index : null;
     return result;
