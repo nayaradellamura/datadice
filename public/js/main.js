@@ -9,7 +9,7 @@ import { logout, requireLogin } from './login.js';
 import { initNotebook, renderNotebook } from './notebook.js';
 import { initTables, renderTables, returnToTable, tableToReturn } from './tables.js';
 import { initTemplates, openTemplates } from './templates.js';
-import { initTours } from './tour.js';
+import { firstStepsPending, initTours, startFirstSteps } from './tour.js';
 import { initSettings } from './settings.js';
 import { initUsage } from './usage.js';
 
@@ -83,8 +83,17 @@ function renderHomeKey() {
   document.getElementById('home-ia-status').hidden = hasKey;
 }
 
+/** Boas-vindas: pergunta se quer o treinamento, enquanto o "Primeiros passos" estiver pendente. */
+function renderWelcome() {
+  const show = firstStepsPending() && store.get('welcome.dismissed') !== '1';
+  document.getElementById('home-welcome').hidden = !show;
+  document.getElementById('home-welcome-ask').hidden = false;
+  document.getElementById('home-welcome-later').hidden = true;
+}
+
 async function renderHome() {
   renderHomeKey();
+  renderWelcome();
   const [campaigns, tables] = await Promise.all([
     api('/campaigns').catch(() => []),
     api('/tables').catch(() => []),
@@ -105,8 +114,8 @@ async function renderHome() {
 async function showView(view) {
   if (VIEW_MODES[view] && VIEW_MODES[view] !== mode) applyMode(VIEW_MODES[view]);
   if (view === 'home') enterHome();
-  // Saindo do Início para uma tela dos dois modos (ex.: Personagens): o topo volta ao último modo usado.
-  else if (!VIEW_MODES[view] && document.body.dataset.mode === 'home') applyMode(mode);
+  // Saindo do Início: o topo e o menu voltam (no modo da tela, ou no último usado, ex.: Personagens).
+  else if (document.body.dataset.mode === 'home') applyMode(VIEW_MODES[view] ?? mode);
   for (const name of VIEWS) document.getElementById(`view-${name}`).hidden = name !== view;
   // Nas telas de administração, quem fica marcada é a aba "Admin".
   const adminButton = document.getElementById('admin-menu-button');
@@ -303,6 +312,21 @@ initUsage();
 
 // Início: toque no logo ou nos botões dos cartões.
 document.querySelector('header h1').addEventListener('click', () => showView('home').catch(viewFailed));
+document.getElementById('home-welcome-yes').addEventListener('click', () => {
+  document.getElementById('home-welcome').hidden = true;
+  startFirstSteps();
+});
+document.getElementById('home-welcome-no').addEventListener('click', () => {
+  // Não quis agora: mostra onde fica o treinamento por alguns segundos. A bolinha continua no botão.
+  store.set('welcome.dismissed', '1');
+  document.getElementById('home-welcome-ask').hidden = true;
+  document.getElementById('home-welcome-later').hidden = false;
+  document.getElementById('tours-open').classList.add('pulse-now');
+  setTimeout(() => {
+    document.getElementById('home-welcome').hidden = true;
+    document.getElementById('tours-open').classList.remove('pulse-now');
+  }, 8000);
+});
 document.getElementById('home-ia-go').addEventListener('click', () => showView('game').catch(viewFailed));
 document.getElementById('home-ia-key').addEventListener('click', () => document.dispatchEvent(new CustomEvent('open-settings', { detail: { section: 'ai' } })));
 // Colou a chave nas Configurações e fechou: o cartão do Mestre IA já mostra "Jogar".

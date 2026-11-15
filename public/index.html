@@ -149,6 +149,7 @@
         <a class="button" id="ai-link" href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer">Obter chave ↗</a>
       </div>
       <p id="ai-status" class="key-status" role="status" hidden></p>
+      <button type="button" id="ai-play" class="primary" hidden>Começar a jogar</button>
       <details class="more">
         <summary>Saiba mais</summary>
         <ul id="ai-more"></ul>
@@ -217,6 +218,16 @@
 
   <main>
     <section id="view-home" class="view home" hidden>
+      <div id="home-welcome" class="home-welcome" hidden>
+        <div id="home-welcome-ask">
+          <p><strong>Boas-vindas ao DataDice!</strong> Quer um tour rápido de 1 minuto pelas duas opções?</p>
+          <div class="home-welcome-actions">
+            <button type="button" class="primary" id="home-welcome-yes">Fazer o treinamento</button>
+            <button type="button" id="home-welcome-no">Agora não</button>
+          </div>
+        </div>
+        <p id="home-welcome-later" hidden>Tudo bem! Quando quiser, os treinamentos ficam no botão <span class="home-welcome-help" aria-label="ajuda">?</span> lá em cima.</p>
+      </div>
       <h2 class="home-title">Como você quer jogar?</h2>
       <div class="home-modes">
         <article class="home-card mode-ia">

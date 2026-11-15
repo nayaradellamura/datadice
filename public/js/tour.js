@@ -220,6 +220,20 @@ function markDone(id) {
   const done = doneSet();
   done.add(id);
   store.set('tours.done', JSON.stringify([...done]));
+  updateHint();
+}
+
+/** "Primeiros passos" ainda não foi feito: o treinamento está pendente. */
+export const firstStepsPending = () => !doneSet().has('inicio');
+
+/** Bolinha no botão de ajuda enquanto o "Primeiros passos" estiver pendente. */
+function updateHint() {
+  el('tours-open')?.classList.toggle('has-hint', firstStepsPending());
+}
+
+/** Começa o "Primeiros passos" (botão do cartão de boas-vindas do Início). */
+export function startFirstSteps() {
+  runTour(TOURS.find((tour) => tour.id === 'inicio'));
 }
 
 function placeCard(card, spot, target) {
@@ -347,9 +361,6 @@ function tourList() {
 }
 
 export function openTours() {
-  // Abriu os treinamentos uma vez: o ponto de "novidade" no botão some.
-  store.set('tours.offered', '1');
-  el('tours-open').classList.remove('has-hint');
   el('tours-list').replaceChildren(...tourList());
   el('tours-dialog').showModal();
 }
@@ -357,6 +368,7 @@ export function openTours() {
 export function initTours({ showView }) {
   ctx = { showView, hasTable: false };
   el('tours-open').addEventListener('click', openTours);
-  // Primeiro acesso: nada abre sozinho. Um ponto no botão de ajuda mostra onde estão os treinamentos.
-  if (!store.get('tours.offered')) el('tours-open').classList.add('has-hint');
+  // Nada abre sozinho. Enquanto o "Primeiros passos" estiver pendente, uma bolinha no botão de ajuda
+  // avisa, e o Início mostra um cartão perguntando se a pessoa quer fazer o treinamento.
+  updateHint();
 }

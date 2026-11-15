@@ -1302,3 +1302,14 @@ body[data-mode="home"] .topbar nav, body[data-mode="home"] #mode-switch { displa
 .settings-acc[open] > summary { color: var(--accent); }
 .settings-acc > summary .summary-note { text-align: right; }
 .settings-acc .accordion-body { gap: .55rem; }
+
+/* Início: cartão de boas-vindas (pergunta do treinamento). */
+.home-welcome { width: min(100%, 860px); padding: .9rem 1rem; border: 1px solid var(--gold); border-radius: 14px; background: var(--panel); }
+.home-welcome p { margin: 0; }
+.home-welcome-actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .7rem; }
+.home-welcome-actions button { flex: 1 1 auto; }
+.home-welcome-help { display: inline-grid; place-items: center; width: 1.5em; height: 1.5em; border-radius: 50%; border: 1px solid var(--muted); font-weight: 700; font-size: .85em; }
+#tours-open.pulse-now { box-shadow: 0 0 0 3px var(--gold); animation: help-pulse 1s ease-in-out infinite; }
+@keyframes help-pulse { 50% { box-shadow: 0 0 0 7px rgb(242 181 42 / .25); } }
+@media (prefers-reduced-motion: reduce) { #tours-open.pulse-now { animation: none; } }
+#ai-play[hidden] { display: none; }

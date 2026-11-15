@@ -57,6 +57,8 @@ function setKeyOf(provider, value) {
 }
 
 function setStatus(state, message) {
+  // Chave testada e aceita: oferece ir direto para o jogo (sem levar a pessoa sozinha para outra tela).
+  el('ai-play').hidden = state !== 'ok';
   const status = el('ai-status');
   status.className = `key-status ${state}`;
   status.textContent = message;
@@ -216,6 +218,10 @@ export function initSettings() {
     renderNotes();
   });
   const showKey = bindEyeToggle(el('ai-key-toggle'), keyInput, 'chave');
+  el('ai-play').addEventListener('click', () => {
+    el('settings-dialog').close();
+    document.dispatchEvent(new CustomEvent('show-view', { detail: 'game' }));
+  });
   el('ai-model').addEventListener('change', (event) => settings.setModel(settings.provider, event.target.value));
   el('ai-models-load').addEventListener('click', loadModels);
   el('ai-test').addEventListener('click', async () => {
