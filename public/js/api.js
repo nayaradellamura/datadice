@@ -154,6 +154,34 @@ export function formatText(text) {
 }
 
 /**
+ * Inventário (um item por linha), como vem da ficha: "*Armas*" ou "Armas:" sozinho na linha vira um título;
+ * item curto vira etiqueta; linha longa (uma lista separada por vírgulas, uma descrição) vira texto normal.
+ */
+const INVENTORY_HEADING = /^\s*(?:\*{1,2}\s*([^*]+?)\s*\*{1,2}|([^,.;*]{1,30}):)\s*:?\s*$/;
+const SHORT_ITEM = 32;
+
+export function inventoryList(items) {
+  const lines = (items ?? []).map((item) => String(item).trim()).filter(Boolean);
+  if (!lines.length) return h('p', { class: 'muted' }, 'Nada ainda.');
+  const box = h('div', { class: 'inventory' });
+  let chipRow = null;
+  for (const line of lines) {
+    const heading = INVENTORY_HEADING.exec(line);
+    if (heading) {
+      chipRow = null;
+      box.append(h('h4', { class: 'inventory-heading' }, (heading[1] ?? heading[2]).trim()));
+    } else if (line.length <= SHORT_ITEM && !line.includes(',')) {
+      if (!chipRow) box.append(chipRow = h('div', { class: 'chips' }));
+      chipRow.append(h('span', { class: 'chip' }, formatText(line)));
+    } else {
+      chipRow = null;
+      box.append(h('p', { class: 'inventory-line' }, formatText(line)));
+    }
+  }
+  return box;
+}
+
+/**
  * Estado vazio padrão (o mesmo em todas as telas): ícone, título, texto curto e as ações.
  * actions: [[rótulo, ao clicar, primária?], ...]
  */

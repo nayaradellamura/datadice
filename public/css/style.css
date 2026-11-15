@@ -1160,3 +1160,10 @@ input, select { min-height: 2.25rem; }
 .reset-request-list li:first-child { border-top: 0; padding-top: 0; }
 .reset-request-actions { display: flex; gap: .5rem; }
 .admin-tab .tab-badge { margin-left: .25rem; }
+
+/* Inventário: títulos de grupo, etiquetas para itens curtos e texto normal para linhas longas. */
+.inventory { display: grid; gap: .4rem; }
+.inventory-heading { margin: .35rem 0 0; font: 600 .75rem var(--sans); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.inventory-heading:first-child { margin-top: 0; }
+.inventory-line { margin: 0; font-size: .9rem; line-height: 1.45; overflow-wrap: anywhere; }
+.inventory .chip { overflow-wrap: anywhere; }

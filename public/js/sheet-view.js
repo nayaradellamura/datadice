@@ -1,4 +1,4 @@
-import { api, formatText, h, signed } from './api.js';
+import { api, formatText, h, inventoryList, signed } from './api.js';
 
 /*
  * "Ver ficha": a ficha inteira só para consultar, numa janela, sem entrar no modo de edição.
@@ -86,7 +86,7 @@ export async function openSheetView(character, { state = null } = {}) {
           h('li', {}, h('span', {}, attack.name), h('b', {}, `${attack.bonus || '+0'} · ${attack.damage || '—'}`)))),
         text('Anotações', sheet.attack_notes)),
       section('Equipamento',
-        (state?.inventory?.length ? h('p', { class: 'prewrap' }, state.inventory.join('\n')) : text('', sheet.equipment)),
+        (state?.inventory?.length ? inventoryList(state.inventory) : text('', sheet.equipment)),
         coinText && h('p', {}, h('strong', {}, 'Moedas: '), coinText),
         text('Tesouro', sheet.treasure)),
       section('Características e talentos', text('', sheet.features), text('Outras', sheet.additional_features)),

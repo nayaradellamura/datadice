@@ -1,4 +1,4 @@
-import { api, campaignLabel, fillSelect, formatText, h, settings, showError, signed, store } from './api.js';
+import { api, campaignLabel, fillSelect, formatText, h, inventoryList, settings, showError, signed, store } from './api.js';
 import { icon } from './icons.js';
 import { openSheetView } from './sheet-view.js';
 import { illustrationFigure, notifyVisualFinished } from './visual.js';
@@ -401,7 +401,7 @@ function renderMember() {
       rollControls(member),
       member.conditions.length > 0 && h('div', { class: 'card' }, h('h3', {}, 'Condições'), chips(member.conditions, 'condition')),
       h('div', { class: 'card' },
-        h('h3', {}, 'Inventário'), chips(member.inventory),
+        h('h3', {}, 'Inventário'), inventoryList(member.inventory),
         h('h4', {}, 'Moedas'), h('p', {}, coins.join(' · ') || '—'),
       ),
       spellSection(member),
