@@ -6,7 +6,7 @@ RPG de mesa D&D 5e (regras de 2014) com uma IA do Gemini como Mestre, ficha comp
 
 - Cada pessoa cria a própria conta (e-mail e senha). A senha é guardada com bcrypt e a sessão usa um token JWT válido por 7 dias.
 - Cada jogador usa a **própria chave do Gemini** (modelo BYOK, "traga sua chave"). A chave fica salva só no navegador dele, em Configurações (ícone de engrenagem), e vai ao servidor no cabeçalho `x-gemini-key` apenas nas ações que falam com o Gemini. O servidor não grava a chave nem a registra em log.
-- A chave gratuita sai em https://aistudio.google.com/app/apikey. O plano gratuito tem limite diário de pedidos e **não inclui geração de imagens**.
+- A chave gratuita sai em https://aistudio.google.com/app/apikey. As Configurações não abrem sozinhas no primeiro acesso: o treinamento **Chave do Gemini** explica, e elas abrem na hora em que alguma ação precisar da chave. O plano gratuito tem limite diário de pedidos e **não inclui geração de imagens**.
 - **Esqueci minha senha:** o site não manda e-mails. A pessoa pede ao admin, que abre o **Painel Admin** e clica em **Link de nova senha** na conta dela. O link (`#nova-senha=...`) vale 1 hora e uma vez só; gerar outro cancela o anterior. Só o hash do código fica no banco. Ao trocar a senha, a pessoa já entra e todos os aparelhos logados antes são desconectados.
 - Cada jogador vê só os próprios personagens e campanhas. O **admin** vê tudo e tem as abas **Caderno do Mestre**, **Métricas de Tokens** e **Painel Admin**.
 
@@ -148,7 +148,9 @@ Em **Campanhas → Nova campanha**, o jogador escolhe um tema, o tom e a duraç�
 Em **Personagens**, **Importar PDF** lê uma ficha e abre o formulário já preenchido; o jogador confere as 3 páginas e clica em **Criar personagem** (nada é salvo antes disso).
 
 - **Ficha oficial preenchível** (da Wizards ou exportada pelo D&D Beyond, com campos como `CharacterName` e `ClassLevel`): lida no servidor, sem IA e sem custo. Classe e raça em inglês são traduzidas.
-- **Qualquer outra** (escaneada, foto, ou com campos genéricos como "Campo de Texto15"): o **Gemini do jogador** lê as páginas, junto com os valores dos campos e a posição de cada um na página. Precisa da chave em Configurações; o consumo aparece em Consumo IA como "Importar ficha em PDF".
+- **Ficha brasileira preenchível** (tradução da ficha oficial, com campos "Campo de Texto0", "Caixa de Seleção6"...; o modelo da "Ficha (Iron).pdf"): também lida sem IA, incluindo perícias, moedas e a página de magias com as preparadas. O modelo é reconhecido pelos nomes **e** pela posição dos campos.
+- Lida sem IA e algo veio errado? O aviso tem **Ler de novo com IA**.
+- **Qualquer outra** (escaneada, foto, ou com campos genéricos de outro modelo): o **Gemini do jogador** lê as páginas, junto com os valores dos campos e a posição de cada um na página. Precisa da chave em Configurações; o consumo aparece em Consumo IA como "Importar ficha em PDF".
 - Proficiências são deduzidas dos bônus escritos; um valor que não bate com o cálculo vira ajuste manual.
 - Limites: 10 MB, 12 páginas, 6 importações por minuto. O PDF é só lido (sem scripts, sem XFA) e não é guardado.
 

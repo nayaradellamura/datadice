@@ -1,4 +1,4 @@
-import { api, settings, store } from './api.js';
+import { api, store } from './api.js';
 import { initAdmin, renderAdmin, renderMetrics } from './admin.js';
 import { initCampaigns, renderCampaigns } from './campaign.js';
 import { initCharacterForm, openCharacter, openForeignCharacter, refreshRoster } from './character.js';
@@ -9,7 +9,7 @@ import { initNotebook, renderNotebook } from './notebook.js';
 import { initTables, renderTables, returnToTable, tableToReturn } from './tables.js';
 import { initTemplates, openTemplates } from './templates.js';
 import { initTours } from './tour.js';
-import { initSettings, openSettings } from './settings.js';
+import { initSettings } from './settings.js';
 import { initUsage, renderUsage } from './usage.js';
 
 const PLAYER_VIEWS = ['game', 'characters', 'campaigns', 'tables', 'templates', 'library', 'usage'];
@@ -245,11 +245,8 @@ const requested = new URLSearchParams(location.search).get('view');
 const initial = VIEWS.includes(requested) ? requested : store.get('view');
 await showView(VIEWS.includes(initial) ? initial : HOME[mode]);
 
-// Primeiro acesso: sem chave, o Mestre IA não funciona; já abre as Configurações explicando.
-// Quem só joga em mesas com Mestre humano pode fechar: lá não precisa de chave.
-if (!settings.apiKey && mode === 'ia') {
-  openSettings({ reason: 'Bem-vindo! Para jogar com o Mestre IA, cole sua chave do Gemini. Não tem? Toque em "Obter chave gratuita no Google". Vai jogar só em mesas com Mestre humano (aba Mesas)? Pode fechar: lá não precisa de chave.' });
-}
+// A chave do Gemini não abre mais sozinha no primeiro acesso: o treinamento "Chave do Gemini" explica,
+// e as Configurações abrem na hora em que alguma ação precisar da chave.
 
 // Treinamentos guiados (botão 🎓). No primeiro acesso, a lista abre sozinha uma vez.
 initTours({ showView });

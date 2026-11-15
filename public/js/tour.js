@@ -1,4 +1,4 @@
-import { api, h, session, store } from './api.js';
+import { api, h, session, settings, store } from './api.js';
 import { icon } from './icons.js';
 import { openTable } from './tables.js';
 
@@ -94,8 +94,20 @@ export const TOURS = [
       { title: 'Bem-vinda ao DataDice!', text: 'Aqui você joga RPG (D&D 5e) de dois jeitos: sozinha, com um Mestre feito por inteligência artificial, ou com amigos, numa mesa em que uma pessoa é o Mestre. Vamos ver onde fica cada coisa.' },
       { target: () => el('mode-switch'), title: 'Dois jeitos de jogar', text: 'Mestre IA: a IA narra a história para você. Mesas com amigos: um Mestre de verdade conduz, sem IA. Cada um tem o seu próprio menu logo abaixo.' },
       { target: () => firstVisible('.tab[data-view="characters"]'), title: 'Personagens servem para os dois', text: 'A mesma ficha vale no Mestre IA e nas mesas. Um personagem pode estar em várias campanhas e mesas ao mesmo tempo.' },
-      { target: () => el('settings-open'), title: 'Configurações', text: 'A chave do Gemini (só para o Mestre IA) e a opção de gerar ilustrações. A chave fica salva só neste navegador. Para jogar nas mesas com amigos não precisa de chave.' },
+      { target: () => el('settings-open'), title: 'Configurações', text: 'A chave do Gemini (só para o Mestre IA) e a opção de gerar ilustrações. A chave fica salva só neste navegador. Para jogar nas mesas com amigos não precisa de chave. O treinamento "Chave do Gemini" mostra como pegar a sua, de graça.' },
       { target: () => el('tours-open'), title: 'Treinamentos', text: 'Sempre que quiser rever algo, toque aqui. Há treinamentos curtos para cada parte do sistema.' },
+    ],
+  },
+  {
+    id: 'chave',
+    icon: 'key',
+    title: 'Chave do Gemini',
+    blurb: 'Pegar a chave grátis e colar, para jogar com o Mestre IA.',
+    steps: [
+      { title: 'Para que serve', text: 'O Mestre IA usa o Gemini, a inteligência artificial do Google. Cada pessoa usa a própria chave, que é grátis. Nas mesas com amigos não precisa de chave.' },
+      { target: () => el('settings-open'), title: 'Onde colar', text: 'A chave fica nas Configurações, nesta engrenagem.' },
+      { title: 'Pegar a chave', text: 'Nas Configurações, toque em "Obter chave gratuita no Google", entre com a sua conta Google, crie a chave e copie. O plano gratuito tem um limite de pedidos por dia e não gera imagens.' },
+      { target: () => el('settings-open'), title: 'Colar e pronto', text: 'Volte aqui, cole a chave no campo e espere o aviso de chave válida. Ela fica salva só neste navegador: no celular ou em outro computador, cole de novo. Toque na engrenagem quando quiser configurar.' },
     ],
   },
   {
@@ -122,6 +134,7 @@ export const TOURS = [
     async start() { await ctx.showView('campaigns'); },
     cleanup() { if (visible(el('campaign-close'))) click('#campaign-close'); },
     steps: [
+      { skipIf: () => Boolean(settings.apiKey), target: () => el('settings-open'), title: 'Antes de tudo: a chave', text: 'Você ainda não colou a sua chave do Gemini, e sem ela o Mestre IA não responde. O treinamento "Chave do Gemini" mostra como pegar a sua, de graça.' },
       { target: () => firstVisible('#campaign-new', '#campaign-list .empty-hero button'), title: 'Campanhas', text: 'Uma campanha é o mundo onde a sua aventura acontece. O Mestre IA lembra de tudo o que acontece nela.' },
       { prepare: () => click('#campaign-new'), target: () => firstVisible('#campaign-mode'), title: 'Com IA ou do zero', text: 'A IA pode criar o mundo para você, ou você escreve tudo do seu jeito.' },
       { target: () => firstVisible('#campaign-themes'), title: 'Tema, tom e duração', text: 'Escolha o tema (fantasia, terror, piratas...), o tom e se é uma aventura curta ou uma campanha longa. Pode dar uma ideia também.' },

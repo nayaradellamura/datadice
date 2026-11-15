@@ -474,6 +474,9 @@ function showPage(page) {
 function setForm(character) {
   foreign = null;
   document.getElementById('import-note').hidden = true;
+  // Avisos da ficha anterior não ficam para a próxima.
+  form.querySelector('#sheet-saved').textContent = '';
+  showError(document.getElementById('character-import-error'), null);
   portraitRequest += 1;
   setGenerating(false);
   showError(form.querySelector('#portrait-error'), null);
@@ -658,7 +661,7 @@ export async function openCharacter(id) {
 const MAX_PDF_MB = 10;
 
 /** Lê uma ficha em PDF e abre o formulário já preenchido; o jogador confere e cria. */
-async function importSheet(file) {
+async function importSheet(file, { withAi = false } = {}) {
   const button = document.getElementById('character-import');
   const status = document.getElementById('character-import-status');
   const errorBox = document.getElementById('character-import-error');
@@ -673,13 +676,14 @@ async function importSheet(file) {
     return;
   }
   button.disabled = true;
+  for (const retry of document.querySelectorAll('#import-note button')) retry.disabled = true;
   status.hidden = false;
-  status.textContent = 'Lendo a ficha... fichas escaneadas podem levar até 1 minuto.';
+  status.textContent = withAi ? 'Lendo a ficha com IA... pode levar até 1 minuto.' : 'Lendo a ficha... fichas escaneadas podem levar até 1 minuto.';
   try {
-    const result = await api('/characters/import', {
+    const result = await api(`/characters/import${withAi ? '?ia=1' : ''}`, {
       method: 'POST',
       body: new Blob([file], { type: 'application/pdf' }),
-      gemini: 'optional',
+      gemini: withAi ? true : 'optional',
     });
     setForm(result.character);
     setCreating(true);
@@ -688,8 +692,12 @@ async function importSheet(file) {
     form.querySelector('#sheet-submit').textContent = 'Criar personagem';
     const note = document.getElementById('import-note');
     note.replaceChildren(
-      h('span', {}, `Ficha lida de "${file.name}"${result.source === 'ia' ? ' pelo Gemini' : ''}. Confira as 3 páginas e clique em Criar personagem. Valores que não estavam legíveis ficaram em branco ou automáticos.`),
-      ...result.warnings.map((warning) => h('strong', {}, warning)));
+      h('span', {}, `Ficha lida de "${file.name}"${result.source === 'ia' ? ' pelo Gemini' : ' sem IA'}. Confira as 3 páginas e clique em Criar personagem. Valores que não estavam legíveis ficaram em branco ou automáticos.`),
+      ...result.warnings.map((warning) => h('strong', {}, warning)),
+      // Lido sem IA e algo veio errado: dá para pedir a leitura pelo Gemini.
+      result.source === 'form'
+        ? h('button', { type: 'button', class: 'small', onclick: (event) => { event.currentTarget.textContent = 'Lendo com IA...'; importSheet(file, { withAi: true }); } }, 'Algo veio errado? Ler de novo com IA')
+        : null);
     note.hidden = false;
     await refreshPreview();
     document.getElementById('sheet-title').scrollIntoView({ block: 'start' });
@@ -698,6 +706,10 @@ async function importSheet(file) {
   } finally {
     button.disabled = false;
     status.hidden = true;
+    for (const retry of document.querySelectorAll('#import-note button')) {
+      retry.disabled = false;
+      retry.textContent = 'Algo veio errado? Ler de novo com IA';
+    }
   }
 }
 

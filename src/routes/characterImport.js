@@ -17,6 +17,8 @@ export function characterImportRoutes(db, { createLlm }) {
     const llm = req.get('x-gemini-key') ? createLlm(readGeminiKey(req)) : null;
     const result = await importCharacterPdf(Buffer.isBuffer(req.body) ? req.body : Buffer.alloc(0), {
       llm,
+      // ?ia=1: o jogador pediu para ler com IA mesmo sendo um modelo que o DataDice conhece.
+      forceAi: req.query.ia === '1',
       onUsage: (model, usage) => logTokens(db, model, usage, { userId: req.user.id, kind: 'import' }),
     });
     res.json(result);

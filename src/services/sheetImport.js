@@ -47,12 +47,23 @@ export async function readPdf(buffer) {
   try {
     if (doc.numPages > MAX_PDF_PAGES) throw new HttpError(400, `A ficha tem ${doc.numPages} páginas; o máximo é ${MAX_PDF_PAGES}. Envie só as páginas da ficha.`);
     const fields = [];
+    // Todos os campos (preenchidos ou não), com posição: serve para reconhecer o modelo da ficha.
+    const layout = new Map();
     let text = '';
     for (let number = 1; number <= doc.numPages; number += 1) {
       const page = await doc.getPage(number);
       const [width, height] = [page.view[2] - page.view[0], page.view[3] - page.view[1]];
       for (const annotation of await page.getAnnotations()) {
         if (annotation.subtype !== 'Widget' || !annotation.fieldName) continue;
+        const [x1, , , y2] = annotation.rect ?? [0, 0, 0, 0];
+        const position = {
+          page: number,
+          // Canto superior esquerdo, em % da página (0 = topo/esquerda), com uma casa decimal.
+          x: Math.round(((x1 - page.view[0]) / width) * 1000) / 10,
+          y: Math.round(((page.view[3] - y2) / height) * 1000) / 10,
+        };
+        const fieldName = String(annotation.fieldName).slice(0, 120);
+        if (!layout.has(fieldName)) layout.set(fieldName, position);
         let value = annotation.fieldValue;
         if (annotation.checkBox || annotation.radioButton) {
           if (!value || value === 'Off') continue;
@@ -62,15 +73,7 @@ export async function readPdf(buffer) {
         }
         if (typeof value === 'string') value = value.trim();
         if (value === '' || value === null || value === undefined) continue;
-        const [x1, , , y2] = annotation.rect ?? [0, 0, 0, 0];
-        fields.push({
-          name: String(annotation.fieldName).slice(0, 120),
-          value: typeof value === 'string' ? value.slice(0, 5000) : value,
-          page: number,
-          // Posição do canto superior esquerdo, em % da página (0 = topo/esquerda).
-          x: Math.round(((x1 - page.view[0]) / width) * 100),
-          y: Math.round(((page.view[3] - y2) / height) * 100),
-        });
+        fields.push({ name: fieldName, value: typeof value === 'string' ? value.slice(0, 5000) : value, ...position });
       }
       if (text.length < MAX_TEXT_FOR_AI) {
         const content = await page.getTextContent();
@@ -78,7 +81,7 @@ export async function readPdf(buffer) {
       }
       page.cleanup();
     }
-    return { pages: doc.numPages, fields, text: text.trim().slice(0, MAX_TEXT_FOR_AI) };
+    return { pages: doc.numPages, fields, layout, text: text.trim().slice(0, MAX_TEXT_FOR_AI) };
   } finally {
     await task.destroy();
   }
@@ -110,6 +113,22 @@ const number = (value) => {
   return match ? Number(match[0]) : null;
 };
 
+/** Quantidade escrita à brasileira: "18.000" = 18000. */
+const amount = (value) => number(String(value ?? '').replace(/(\d)\.(?=\d{3}(?!\d))/g, '$1'));
+
+/** Moedas: aceita "125", "125 PO", "6 pp"; recusa outra coisa (ex.: "45,5 Kg" escrito no lugar). */
+const coin = (value) => (/^\s*[\d.]+\s*(p[cpeol]|cp|sp|ep|gp)?\.?\s*$/i.test(String(value ?? '')) ? amount(value) : null);
+
+/** "Fighter 3", "Ladino nível 5", "Guerreiro 3 / Mago 2" -> classe sem números e nível somado. */
+function classAndLevel(text) {
+  const parts = String(text ?? '').split(/[/,]/).map((part) => part.trim()).filter(Boolean);
+  const level = parts.reduce((sum, part) => sum + (number(part) ?? 0), 0);
+  const name = parts
+    .map((part) => part.replace(/(^|\s)(n[ií]vel|nv|lvl|level|lv)\.?(?=\s|$)/gi, ' ').replace(/\d+[ºo°]?/g, '').replace(/\s+/g, ' ').trim())
+    .filter(Boolean).join(' / ');
+  return { name, level: level || 1 };
+}
+
 /** Ficha da Wizards/D&D Beyond: devolve o rascunho, ou null se os nomes dos campos não forem desses. */
 export function mapKnownForm(fields) {
   const byKey = new Map();
@@ -130,17 +149,16 @@ export function mapKnownForm(fields) {
   const classLevel = get('classlevel');
   if (!characterName || !classLevel || Object.keys(abilities).length < 3) return null;
 
-  const parts = classLevel.split(/[/,]/).map((part) => part.trim()).filter(Boolean);
-  const level = parts.reduce((sum, part) => sum + (number(part) ?? 0), 0);
+  const { name: chosenClass, level } = classAndLevel(classLevel);
   const raw = {
     name: characterName,
     race: get('race'),
-    class: parts.map((part) => part.replace(/\d+/g, '').trim()).filter(Boolean).join(' / '),
-    level: level || 1,
+    class: chosenClass,
+    level,
     background: get('background'),
     alignment: get('alignment'),
     player_name: get('playername'),
-    xp: number(get('xp')),
+    xp: amount(get('xp')),
     abilities,
     armor_class: number(get('ac')),
     initiative: number(get('initiative')),
@@ -156,7 +174,7 @@ export function mapKnownForm(fields) {
       ['wpnname2', 'wpn2atkbonus', 'wpn2damage'],
       ['wpnname3', 'wpn3atkbonus', 'wpn3damage'],
     ].map(([name, bonus, damage]) => ({ name: get(name), bonus: get(bonus), damage: get(damage) })),
-    coins: Object.fromEntries(Object.entries(FORM_COINS).map(([coin, name]) => [coin, number(get(name))])),
+    coins: Object.fromEntries(Object.entries(FORM_COINS).map(([key, name]) => [key, coin(get(name))])),
     texts: Object.fromEntries(Object.entries(FORM_TEXTS).map(([field, name]) => [field, get(name)])),
     spell_ability: get('spellcastingability2'),
     // SlotsTotal 19 a 27 = 1º a 9º círculo.
@@ -167,6 +185,113 @@ export function mapKnownForm(fields) {
   if ([...byKey.keys()].some((name) => /^spells\d/.test(name))) {
     warnings.push('As magias da página 3 não foram importadas (essa ficha não diz o círculo de cada uma). Copie-as na Página 3.');
   }
+  return { raw, warnings };
+}
+
+// ---------- Ficha brasileira preenchível (modelo "Iron") ----------
+// Tradução da ficha oficial (© Wizards, 2019) com campos de nome genérico, como "Campo de Texto27".
+// Os números abaixo foram conferidos campo a campo nas fichas "Ficha (Iron).pdf" e "Ficha D&D.pdf".
+
+const IRON = {
+  text: (n) => `Campo de Texto${n}`,
+  box: (n) => `Caixa de Seleção${n}`,
+  // Campos que precisam existir, na posição certa (página, x, y em %), para ser este modelo.
+  signature: [[0, 1, 7, 8], [27, 1, 6, 19], [30, 1, 6, 28], [66, 1, 18, 40], [83, 1, 18, 69], [84, 2, 7, 8], [17, 2, 5, 49]],
+  scores: { str: 27, dex: 30, con: 32, int: 35, wis: 36, cha: 38 },
+  saves: { str: [0, 60], dex: [1, 61], con: [2, 62], int: [3, 63], wis: [4, 64], cha: [5, 65] },
+  // Perícias na ordem da ficha (a mesma da lista do sistema): caixa 6 a 23, valor 66 a 83.
+  firstSkillBox: 6,
+  firstSkillValue: 66,
+  attacks: [[45, 48, 51], [46, 49, 52], [47, 50, 53]],
+  coins: { pc: 55, pp: 57, pe: 58, po: 59, pl: 56 },
+  texts: {
+    personality: 1, ideals: 2, bonds: 3, flaws: 4, features: 14, attack_notes: 5, equipment: 6,
+    proficiencies_languages: 7, age: 85, height: 86, weight: 87, eyes: 90, skin: 89, hair: 88,
+    allies: 209, organization: 18, additional_features: 15, treasure: 16, spell_class: 19,
+  },
+  // Página 3: total de espaços de cada círculo e as linhas de magia de cada um.
+  slots: { 1: 104, 2: 105, 3: 92, 4: 97, 5: 106, 6: 93, 7: 95, 8: 108, 9: 107 },
+  spells: {
+    0: [134, 141], 1: [109, 120], 2: [121, 133], 3: [196, 208], 4: [183, 195],
+    5: [174, 182], 6: [165, 173], 7: [156, 164], 8: [149, 155], 9: [142, 148],
+  },
+  // Caixa "preparada" de cada linha de magia (pareadas pela altura na página).
+  prepared: {
+    30: 130, 31: 129, 32: 128, 33: 111, 34: 112, 35: 113, 36: 114, 37: 115, 38: 116, 39: 117, 40: 118, 41: 119, 42: 120,
+    43: 127, 44: 126, 45: 125, 46: 124, 47: 123, 48: 122, 49: 121, 50: 131, 51: 132, 52: 133, 53: 109, 54: 110,
+    56: 155, 57: 154, 58: 153, 59: 178, 60: 179, 61: 180, 62: 148, 63: 147, 64: 146, 65: 145, 66: 144, 67: 143, 68: 142,
+    69: 174, 70: 175, 71: 176, 72: 177, 73: 181, 74: 182, 75: 152, 76: 151, 77: 150, 78: 149, 79: 164, 80: 163,
+    81: 162, 82: 161, 83: 160, 84: 159, 85: 158, 86: 157, 87: 156, 88: 173, 89: 172, 90: 171, 91: 170, 92: 169,
+    93: 168, 94: 167, 95: 166, 96: 165, 97: 195, 98: 194, 99: 193, 100: 192, 101: 191, 102: 190, 103: 189, 104: 188,
+    105: 187, 106: 186, 107: 185, 108: 184, 109: 183, 110: 208, 111: 207, 112: 206, 113: 205, 114: 204, 115: 203,
+    116: 202, 117: 201, 118: 200, 119: 199, 120: 198, 121: 197, 122: 196,
+  },
+};
+
+export function isIronLayout(layout) {
+  return IRON.signature.every(([n, page, x, y]) => {
+    const at = layout?.get(IRON.text(n));
+    return Boolean(at) && at.page === page && Math.abs(at.x - x) <= 3 && Math.abs(at.y - y) <= 3;
+  });
+}
+
+/** Ficha brasileira (modelo "Iron"): devolve o rascunho, ou null se não for esse modelo. */
+export function mapIronForm(fields, layout) {
+  if (!isIronLayout(layout)) return null;
+  const values = new Map();
+  for (const field of fields) if (!values.has(field.name)) values.set(field.name, field.value);
+  const text = (n) => {
+    const value = values.get(IRON.text(n));
+    return typeof value === 'string' ? value.trim() : '';
+  };
+  const checked = (n) => values.get(IRON.box(n)) === true;
+  const pageThree = layout.get(IRON.text(134))?.page === 3;
+  const { name: chosenClass, level } = classAndLevel(text(8));
+
+  const spells = [];
+  if (pageThree) {
+    const preparedLines = new Set(Object.entries(IRON.prepared).filter(([box]) => checked(Number(box))).map(([, line]) => line));
+    for (const [circle, [from, to]] of Object.entries(IRON.spells)) {
+      const lines = [];
+      for (let n = from; n <= to; n += 1) if (text(n)) lines.push(n);
+      // De cima para baixo, como está na ficha.
+      lines.sort((a, b) => (layout.get(IRON.text(a))?.y ?? 0) - (layout.get(IRON.text(b))?.y ?? 0));
+      for (const n of lines) spells.push({ circle: Number(circle), name: text(n), prepared: preparedLines.has(n) });
+    }
+  }
+
+  const raw = {
+    name: text(0) || text(84),
+    race: text(13),
+    class: chosenClass,
+    level,
+    background: text(9),
+    alignment: text(12),
+    player_name: text(10),
+    xp: amount(text(11)),
+    abilities: Object.fromEntries(Object.entries(IRON.scores).map(([ability, n]) => [ability, number(text(n))])),
+    armor_class: number(text(25)),
+    initiative: number(text(23)),
+    speed: text(24),
+    max_hp: number(text(42)),
+    hit_dice: text(43),
+    proficiency_bonus: number(text(28)),
+    passive_perception: number(text(54)),
+    saves: Object.fromEntries(Object.entries(IRON.saves).map(([ability, [box, value]]) =>
+      [ability, { value: number(text(value)), proficient: checked(box) }])),
+    skills: Object.fromEntries(SKILLS.map(({ key: skill }, index) =>
+      [skill, { value: number(text(IRON.firstSkillValue + index)), proficient: checked(IRON.firstSkillBox + index) }])),
+    attacks: IRON.attacks.map(([name, bonus, damage]) => ({ name: text(name), bonus: text(bonus), damage: text(damage) })),
+    coins: Object.fromEntries(Object.entries(IRON.coins).map(([key, n]) => [key, coin(text(n))])),
+    texts: Object.fromEntries(Object.entries(IRON.texts).map(([field, n]) => [field, text(n)])),
+    spell_ability: text(20),
+    spell_slots: Object.fromEntries(Object.entries(IRON.slots).map(([circle, n]) => [circle, number(text(n))])),
+    spells,
+    backstory: text(17),
+  };
+  if (!raw.name && !raw.class) throw new HttpError(400, 'Essa ficha está em branco. Preencha o PDF (nome e classe, pelo menos) antes de importar.');
+  const warnings = [];
+  if (!pageThree) warnings.push('Essa ficha não tem a página de magias; se o personagem conjura, preencha a Página 3.');
   return { raw, warnings };
 }
 
@@ -379,13 +504,19 @@ export function toCharacterDraft(raw = {}) {
   };
 }
 
-/** Lê o PDF e devolve { source, character, warnings }. llm é opcional (sem ele, só fichas oficiais). */
-export async function importCharacterPdf(buffer, { llm, onUsage = async () => {} } = {}) {
+/**
+ * Lê o PDF e devolve { source, character, warnings }. llm é opcional (sem ele, só os modelos conhecidos).
+ * forceAi: o jogador pediu para ler com IA mesmo sendo um modelo conhecido.
+ */
+export async function importCharacterPdf(buffer, { llm, onUsage = async () => {}, forceAi = false } = {}) {
   const parsed = await readPdf(buffer);
-  const known = mapKnownForm(parsed.fields);
-  if (known) return { source: 'form', character: toCharacterDraft(known.raw), warnings: known.warnings };
+  if (!forceAi) {
+    const known = mapKnownForm(parsed.fields) ?? mapIronForm(parsed.fields, parsed.layout);
+    if (known) return { source: 'form', character: toCharacterDraft(known.raw), warnings: known.warnings };
+  }
+  if (!llm && forceAi) throw new HttpError(400, 'Para ler com IA, configure sua chave do Gemini em Configurações (ícone de engrenagem).', 'gemini_key');
   if (!llm) {
-    throw new HttpError(400, 'Essa ficha não é a oficial preenchível, então quem lê é o Gemini. Configure sua chave do Gemini em Configurações (ícone de engrenagem) e tente de novo.', 'gemini_key');
+    throw new HttpError(400, 'Esse modelo de ficha eu não conheço, então quem lê é o Gemini. Configure sua chave do Gemini em Configurações (ícone de engrenagem) e tente de novo.', 'gemini_key');
   }
   let result;
   try {
