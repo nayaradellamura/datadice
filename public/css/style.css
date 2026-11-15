@@ -1232,3 +1232,10 @@ input, select { min-height: 2.25rem; }
 .view-banner { position: sticky; top: 0; z-index: 50; display: flex; gap: .75rem; align-items: center; justify-content: space-between;
   padding: .5rem 16px; background: var(--gold); color: #1c1404; font-weight: 600; font-size: .9rem; }
 .view-banner button { background: #1c1404; color: var(--gold); border-color: #1c1404; flex: 0 0 auto; }
+
+/* Primeiro acesso: ponto no botão de ajuda até a pessoa abrir os treinamentos (nada abre sozinho). */
+#tours-open { position: relative; }
+#tours-open.has-hint::after { content: ''; position: absolute; top: 4px; right: 4px; width: 10px; height: 10px; border-radius: 50%;
+  background: var(--accent); box-shadow: 0 0 0 2px var(--bg); animation: hint-pulse 1.6s ease-in-out infinite; }
+@keyframes hint-pulse { 50% { transform: scale(1.35); opacity: .7; } }
+@media (prefers-reduced-motion: reduce) { #tours-open.has-hint::after { animation: none; } }

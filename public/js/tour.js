@@ -346,6 +346,9 @@ function tourList() {
 }
 
 export function openTours() {
+  // Abriu os treinamentos uma vez: o ponto de "novidade" no botão some.
+  store.set('tours.offered', '1');
+  el('tours-open').classList.remove('has-hint');
   el('tours-list').replaceChildren(...tourList());
   el('tours-dialog').showModal();
 }
@@ -353,11 +356,6 @@ export function openTours() {
 export function initTours({ showView }) {
   ctx = { showView, hasTable: false };
   el('tours-open').addEventListener('click', openTours);
-  // Primeiro acesso: oferece os treinamentos uma vez (depois de fechar as Configurações, se estiverem abertas).
-  if (!store.get('tours.offered')) {
-    store.set('tours.offered', '1');
-    const settings = el('settings-dialog');
-    if (settings?.open) settings.addEventListener('close', () => setTimeout(openTours, 200), { once: true });
-    else setTimeout(openTours, 400);
-  }
+  // Primeiro acesso: nada abre sozinho. Um ponto no botão de ajuda mostra onde estão os treinamentos.
+  if (!store.get('tours.offered')) el('tours-open').classList.add('has-hint');
 }
