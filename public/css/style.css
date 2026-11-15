@@ -226,7 +226,8 @@ label.inline select { margin: 0; min-width: 12rem; }
 @media (prefers-reduced-motion: reduce) { .visual-open img { transition: none; } }
 
 
-.avatar img { width: 100%; height: 100%; object-fit: cover; object-position: top; border-radius: 50%; }
+/* O retrato ocupa exatamente o círculo, qualquer que seja o formato da imagem (retrato alto não vaza). */
+.avatar img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top; border-radius: 50%; }
 .member-head { display: flex; align-items: center; gap: .7rem; }
 .member-head img { flex: none; width: 3.5rem; height: 3.5rem; object-fit: cover; object-position: top; border-radius: 50%; border: 2px solid var(--accent); }
 
@@ -247,7 +248,7 @@ label.inline select { margin: 0; min-width: 12rem; }
   background: linear-gradient(140deg, hsl(var(--hue) 60% 46%), hsl(var(--hue) 65% 28%));
 }
 .level-badge {
-  position: absolute; right: -.3rem; bottom: -.25rem; min-width: 1.35rem; padding-inline: .25rem; text-align: center;
+  position: absolute; z-index: 1; right: -.3rem; bottom: -.25rem; min-width: 1.35rem; padding-inline: .25rem; text-align: center;
   font: 700 .7rem/1.35rem var(--sans); color: var(--text); background: var(--bg); border: 1px solid var(--tone); border-radius: 999px;
 }
 .card-identity { min-width: 0; }
