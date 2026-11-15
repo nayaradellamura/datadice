@@ -10,9 +10,9 @@ import { initTables, renderTables, returnToTable, tableToReturn } from './tables
 import { initTemplates, openTemplates } from './templates.js';
 import { initTours } from './tour.js';
 import { initSettings } from './settings.js';
-import { initUsage, renderUsage } from './usage.js';
+import { initUsage } from './usage.js';
 
-const PLAYER_VIEWS = ['game', 'characters', 'campaigns', 'tables', 'templates', 'library', 'usage'];
+const PLAYER_VIEWS = ['game', 'characters', 'campaigns', 'tables', 'templates', 'library'];
 const ADMIN_VIEWS = ['notebook', 'metrics', 'admin'];
 
 const user = await requireLogin();
@@ -31,9 +31,9 @@ if (admin) {
   document.getElementById('admin-menu-button').addEventListener('click', refreshAdminBadge);
 }
 
-// Dois tipos de jogo, cada um com o seu menu: Mestre IA (Jogo, Campanhas, Biblioteca, Consumo IA) e
+// Dois tipos de jogo, cada um com o seu menu: Mestre IA (Jogo, Campanhas, Biblioteca) e
 // Mesas com amigos (Mesas). Personagens e o menu Admin aparecem nos dois.
-const VIEW_MODES = { game: 'ia', campaigns: 'ia', library: 'ia', usage: 'ia', tables: 'mesa', templates: 'mesa' };
+const VIEW_MODES = { game: 'ia', campaigns: 'ia', library: 'ia', tables: 'mesa', templates: 'mesa' };
 const HOME = { ia: 'game', mesa: 'tables' };
 let mode = store.get('mode') === 'mesa' ? 'mesa' : 'ia';
 
@@ -81,7 +81,6 @@ async function showView(view) {
   if (view !== 'tables') document.body.classList.remove('in-table');
   if (view === 'notebook') await renderNotebook();
   if (view === 'library') await renderLibrary();
-  if (view === 'usage') await renderUsage();
   if (view === 'metrics') await renderMetrics();
   if (view === 'admin') await renderAdmin();
   // Uma nova tentativa feita na Biblioteca precisa aparecer também nas bolhas.

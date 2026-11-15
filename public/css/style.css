@@ -1167,3 +1167,8 @@ input, select { min-height: 2.25rem; }
 .inventory-heading:first-child { margin-top: 0; }
 .inventory-line { margin: 0; font-size: .9rem; line-height: 1.45; overflow-wrap: anywhere; }
 .inventory .chip { overflow-wrap: anywhere; }
+
+/* Configurações: abas "Chave e imagens" e "Consumo IA". */
+.settings-tabs { margin: .8rem 1rem 0; }
+#settings-pane-usage .stat-grid { grid-template-columns: repeat(auto-fit, minmax(6.5rem, 1fr)); }
+#settings-pane-usage .quota-number { font-size: 1.5rem; line-height: 1.2; }

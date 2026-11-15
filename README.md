@@ -98,7 +98,7 @@ Proteções já incluídas: senhas com bcrypt, limite de 20 tentativas de login 
 - **Imagens:** `gemini-3.1-flash-lite-image`, a opção de imagem mais barata (cerca de US$ 0,034 por imagem). **Exige faturamento ativo** na chave.
 - Em Configurações, **Gerar Ilustrações de Cenas e NPCs via Gemini** vem desligado. Desligado, o Mestre nem recebe as instruções de imagem: a chave gasta menos tokens e nenhuma imagem é cobrada. O retrato da ficha é gerado só quando o jogador clica no botão.
 
-Na aba **Consumo IA**, cada jogador acompanha o gasto da própria chave:
+Em **Configurações** (engrenagem), aba **Consumo IA**, cada jogador acompanha o gasto da própria chave:
 
 - **Limite diário:** quantos pedidos a chave já fez hoje pelo DataDice e a hora em que o limite gratuito volta. O Google zera a contagem à meia-noite do Pacífico (5h ou 4h em Brasília, conforme o horário de verão americano).
 - **Totais:** tokens, pedidos e custo estimado, com filtro de período (hoje, 7 dias, 30 dias ou tudo).
@@ -120,7 +120,7 @@ O motivo da falha de cada ilustração fica salvo e aparece na bolha do chat e n
 
 ## Menus e treinamentos
 
-- **Dois tipos de jogo no topo:** 🤖 **Mestre IA** (Jogo, Campanhas, Biblioteca, Consumo IA) e 🎲 **Mesas com amigos** (Mesas). **Personagens** e o menu Admin aparecem nos dois. O DataDice lembra o último tipo usado; no modo Mesas, a chave do Gemini não é pedida.
+- **Dois tipos de jogo no topo:** 🤖 **Mestre IA** (Jogo, Campanhas, Biblioteca) e 🎲 **Mesas com amigos** (Mesas). **Personagens** e o menu Admin aparecem nos dois. O DataDice lembra o último tipo usado; no modo Mesas, a chave do Gemini não é pedida.
 - **Treinamentos (🎓):** tours curtos que navegam pelo sistema e destacam cada parte: Primeiros passos, Criar um personagem, Jogar com o Mestre IA, Mesas como Mestre, Mesas como jogador e (para admins) Ferramentas de admin. Não criam nem apagam nada. Abrem sozinhos no primeiro acesso e ficam marcados como concluídos neste navegador.
 
 ## Mesas em grupo (Mestre humano)
@@ -151,7 +151,7 @@ Em **Personagens**, **Importar PDF** lê uma ficha e abre o formulário já pree
 - **Ficha oficial preenchível** (da Wizards ou exportada pelo D&D Beyond, com campos como `CharacterName` e `ClassLevel`): lida no servidor, sem IA e sem custo. Classe e raça em inglês são traduzidas.
 - **Ficha brasileira preenchível** (tradução da ficha oficial, com campos "Campo de Texto0", "Caixa de Seleção6"...; o modelo da "Ficha (Iron).pdf"): também lida sem IA, incluindo perícias, moedas e a página de magias com as preparadas. O modelo é reconhecido pelos nomes **e** pela posição dos campos.
 - Lida sem IA e algo veio errado? O aviso tem **Ler de novo com IA**.
-- **Qualquer outra** (escaneada, foto, ou com campos genéricos de outro modelo): o **Gemini do jogador** lê as páginas, junto com os valores dos campos e a posição de cada um na página. Precisa da chave em Configurações; o consumo aparece em Consumo IA como "Importar ficha em PDF".
+- **Qualquer outra** (escaneada, foto, ou com campos genéricos de outro modelo): o **Gemini do jogador** lê as páginas, junto com os valores dos campos e a posição de cada um na página. Precisa da chave em Configurações; o consumo aparece em Configurações > Consumo IA como "Importar ficha em PDF".
 - Proficiências são deduzidas dos bônus escritos; um valor que não bate com o cálculo vira ajuste manual.
 - Limites: 10 MB, 12 páginas, 6 importações por minuto. O PDF é só lido (sem scripts, sem XFA) e não é guardado.
 

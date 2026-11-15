@@ -77,7 +77,6 @@
       <button class="tab" data-view="characters">Personagens</button>
       <button class="tab" data-view="campaigns" data-mode="ia">Campanhas</button>
       <button class="tab" data-view="library" data-mode="ia">Biblioteca</button>
-      <button class="tab" data-view="usage" data-mode="ia">Consumo IA</button>
       <button type="button" class="tab admin-tab" id="admin-menu-button" data-admin hidden aria-haspopup="menu" aria-expanded="false" aria-controls="admin-menu">
         Admin <span id="admin-badge" class="tab-badge" hidden></span> <span class="caret" aria-hidden="true">▾</span>
       </button>
@@ -110,6 +109,11 @@
       <h2 id="settings-title">Configurações</h2>
       <button class="icon-button" value="close" aria-label="Fechar">✕</button>
     </form>
+    <div class="settings-tabs segmented" role="tablist" aria-label="Configurações">
+      <button type="button" role="tab" id="settings-tab-key" data-tab="key" aria-controls="settings-pane-key">Chave e imagens</button>
+      <button type="button" role="tab" id="settings-tab-usage" data-tab="usage" aria-controls="settings-pane-usage">Consumo IA</button>
+    </div>
+    <div id="settings-pane-key" role="tabpanel" aria-labelledby="settings-tab-key">
     <section class="settings-section">
       <h3><label for="settings-key">Chave do Gemini</label></h3>
       <div class="password-field">
@@ -150,6 +154,13 @@
         </ul>
       </details>
     </section>
+    </div>
+    <div id="settings-pane-usage" class="settings-section" role="tabpanel" aria-labelledby="settings-tab-usage" hidden>
+      <p class="muted small-print">Quanto a sua chave do Gemini gastou no DataDice.</p>
+      <div id="usage-periods" class="period-switch" role="group" aria-label="Período"></div>
+      <p id="usage-error" class="error" role="alert" hidden></p>
+      <div id="usage-content" class="stack"></div>
+    </div>
   </dialog>
 
   <main>
@@ -394,15 +405,6 @@
           <div id="memory-list" class="stack"></div>
         </div>
       </div>
-    </section>
-
-    <section id="view-usage" class="view" hidden>
-      <div class="section-head">
-        <h2>Consumo IA</h2>
-        <div id="usage-periods" class="period-switch" role="group" aria-label="Período"></div>
-      </div>
-      <p id="usage-error" class="error" role="alert" hidden></p>
-      <div id="usage-content" class="stack"></div>
     </section>
 
     <section id="view-metrics" class="view" hidden>

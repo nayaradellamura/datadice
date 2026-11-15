@@ -1,4 +1,5 @@
 import { api, bindEyeToggle, settings } from './api.js';
+import { renderUsage } from './usage.js';
 
 const el = (id) => document.getElementById(id);
 
@@ -9,8 +10,22 @@ function setStatus(state, message) {
   status.hidden = !message;
 }
 
-export function openSettings({ reason } = {}) {
+/** Abas das Configurações: "Chave e imagens" e "Consumo IA". */
+function showTab(tab) {
+  for (const button of document.querySelectorAll('.settings-tabs button')) {
+    const active = button.dataset.tab === tab;
+    button.classList.toggle('active', active);
+    button.setAttribute('aria-selected', String(active));
+  }
+  el('settings-pane-key').hidden = tab !== 'key';
+  el('settings-pane-usage').hidden = tab !== 'usage';
+  if (tab === 'usage') renderUsage();
+}
+
+export function openSettings({ reason, tab = 'key' } = {}) {
   const dialog = el('settings-dialog');
+  // Um aviso (ex.: falta a chave) sempre abre na aba da chave.
+  showTab(reason ? 'key' : tab);
   el('settings-key').value = settings.apiKey;
   el('settings-images').checked = settings.imagesEnabled;
   if (reason) setStatus('warn', reason);
@@ -23,6 +38,9 @@ export function initSettings() {
   const toggle = el('settings-key-toggle');
 
   el('settings-open').addEventListener('click', () => openSettings());
+  for (const button of document.querySelectorAll('.settings-tabs button')) {
+    button.addEventListener('click', () => showTab(button.dataset.tab));
+  }
   document.addEventListener('open-settings', () => openSettings());
   document.addEventListener('need-gemini-key', () =>
     openSettings({ reason: 'Cole sua chave do Gemini para jogar.' }));

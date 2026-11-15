@@ -94,7 +94,7 @@ export const TOURS = [
       { title: 'Bem-vinda ao DataDice!', text: 'Aqui você joga RPG (D&D 5e) de dois jeitos: sozinha, com um Mestre feito por inteligência artificial, ou com amigos, numa mesa em que uma pessoa é o Mestre. Vamos ver onde fica cada coisa.' },
       { target: () => el('mode-switch'), title: 'Dois jeitos de jogar', text: 'Mestre IA: a IA narra a história para você. Mesas com amigos: um Mestre de verdade conduz, sem IA. Cada um tem o seu próprio menu logo abaixo.' },
       { target: () => firstVisible('.tab[data-view="characters"]'), title: 'Personagens servem para os dois', text: 'A mesma ficha vale no Mestre IA e nas mesas. Um personagem pode estar em várias campanhas e mesas ao mesmo tempo.' },
-      { target: () => el('settings-open'), title: 'Configurações', text: 'A chave do Gemini (só para o Mestre IA) e a opção de gerar ilustrações. A chave fica salva só neste navegador. Para jogar nas mesas com amigos não precisa de chave. O treinamento "Chave do Gemini" mostra como pegar a sua, de graça.' },
+      { target: () => el('settings-open'), title: 'Configurações', text: 'A chave do Gemini (só para o Mestre IA), a opção de gerar ilustrações e o Consumo IA (quanto a chave gastou e quanto sobra hoje). A chave fica salva só neste navegador. Para jogar nas mesas com amigos não precisa de chave. O treinamento "Chave do Gemini" mostra como pegar a sua, de graça.' },
       { target: () => el('tours-open'), title: 'Treinamentos', text: 'Sempre que quiser rever algo, toque aqui. Há treinamentos curtos para cada parte do sistema.' },
     ],
   },
@@ -143,7 +143,7 @@ export const TOURS = [
       { target: () => firstVisible('#session-gate', '#chat-form'), title: 'A aventura', text: 'O Mestre abre a sessão com uma introdução. Depois é só escrever o que o seu personagem faz, e a IA narra o que acontece.' },
       { target: () => firstVisible('#member-panel .card', '#member-panel'), title: 'Seu personagem e os dados', text: 'PV, armas, testes e perícias com um toque para rolar. O Mestre recebe o resultado na hora.' },
       { target: () => firstVisible('.tab[data-view="library"]'), title: 'Biblioteca', text: 'As ilustrações de NPCs, monstros e lugares que apareceram na campanha.' },
-      { target: () => firstVisible('.tab[data-view="usage"]'), title: 'Consumo IA', text: 'Quanto a sua chave do Gemini gastou, por dia e por campanha.' },
+      { target: () => el('settings-open'), title: 'Consumo IA', text: 'Quanto a sua chave do Gemini gastou e quanto ainda sobra hoje fica nas Configurações (engrenagem), na aba Consumo IA.' },
     ],
   },
   {
