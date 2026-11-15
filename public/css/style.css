@@ -1239,3 +1239,13 @@ input, select { min-height: 2.25rem; }
   background: var(--accent); box-shadow: 0 0 0 2px var(--bg); animation: hint-pulse 1.6s ease-in-out infinite; }
 @keyframes hint-pulse { 50% { transform: scale(1.35); opacity: .7; } }
 @media (prefers-reduced-motion: reduce) { #tours-open.has-hint::after { animation: none; } }
+
+/* Configurações: escolha da IA do Mestre em cartões (2 por linha) e do serviço de imagens. */
+.provider-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem; }
+.provider-option { display: flex; flex-direction: column; align-items: flex-start; gap: .1rem; padding: .6rem .75rem; min-height: 56px;
+  text-align: left; background: var(--input); border: 1px solid var(--line); border-radius: 10px; }
+.provider-option small { color: var(--muted); font-size: .78rem; line-height: 1.2; }
+.provider-option.active { border-color: var(--accent); background: var(--panel-2); box-shadow: 0 0 0 1px var(--accent) inset; }
+.provider-option.active strong { color: var(--accent); }
+.img-provider { margin-bottom: 0; }
+#img-options[hidden], #img-off-note[hidden] { display: none; }

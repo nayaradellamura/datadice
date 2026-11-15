@@ -22,9 +22,9 @@ import { visualRoutes } from './routes/visuals.js';
 import { publicUser } from './services/auth.js';
 import { imageFileRoutes, saveImage } from './services/imageStore.js';
 import { createGameMaster } from './services/gameMaster.js';
-import { createAnthropicClient, createOpenAiClient } from './services/aiProviders.js';
+import { createAnthropicClient, createOpenAiClient, createOpenAiImageClient } from './services/aiProviders.js';
 import { createGeminiClient } from './services/gemini.js';
-import { createGeminiImageClient } from './services/geminiImages.js';
+import { createGeminiImageClient, decodeImage } from './services/geminiImages.js';
 import { createVisuals } from './services/visuals.js';
 
 export const DEFAULT_IMAGES_DIR = fileURLToPath(new URL('../public/images', import.meta.url));
@@ -80,6 +80,8 @@ export function createApp({
   hsts = false,
   // Na hospedagem, cada ação registrada também sai numa linha do log do servidor.
   activityConsole = false,
+  // Modelo de imagem da OpenAI (padrão em aiProviders.js); OPENAI_IMAGE_MODEL troca sem mexer no código.
+  openAiImageModel = process.env.OPENAI_IMAGE_MODEL || null,
 }) {
   if (!jwtSecret) throw new Error('jwtSecret é obrigatório.');
   const app = express();
@@ -90,11 +92,13 @@ export function createApp({
     return createGeminiClient({ apiKey, model: textModel });
   };
   // As imagens geradas vão para o banco, registradas em nome de quem pediu.
-  const createImages = images ? () => images : (apiKey, user) => createGeminiImageClient({
-    apiKey,
-    model: imageModel,
-    store: (image) => saveImage(db, { ...image, userId: user?.id ?? null }),
-  });
+  const createImages = images ? () => images : (apiKey, user, provider = 'gemini') => {
+    const store = (image) => saveImage(db, { ...image, userId: user?.id ?? null });
+    if (provider === 'openai') {
+      return createOpenAiImageClient({ apiKey, store, decode: decodeImage, ...(openAiImageModel ? { model: openAiImageModel } : {}) });
+    }
+    return createGeminiImageClient({ apiKey, model: imageModel, store });
+  };
   const visuals = createVisuals({ db, ...(onBackgroundError ? { onError: onBackgroundError } : {}) });
   const gameMaster = createGameMaster({ db, visuals, onBackgroundError });
   const needsKey = requireGeminiKey({ createLlm, createImages });

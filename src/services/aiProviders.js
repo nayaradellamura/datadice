@@ -274,3 +274,36 @@ export function createOpenAiClient({ apiKey, model, provider = 'openai', client 
     },
   };
 }
+
+// ---------------- Imagens pela OpenAI ----------------
+
+export const DEFAULT_OPENAI_IMAGE_MODEL = 'gpt-image-2';
+const IMAGE_SIZES = { '2:3': '1024x1536', '3:2': '1536x1024', '1:1': '1024x1024' };
+
+/**
+ * Gera imagens com a chave da OpenAI do jogador. Mesma interface do cliente de imagens do Gemini:
+ * generate(prompt, { aspectRatio, filePrefix, campaignId }) devolve a URL da imagem guardada.
+ */
+export function createOpenAiImageClient({ apiKey, model = DEFAULT_OPENAI_IMAGE_MODEL, store, decode, client }) {
+  const label = 'ChatGPT (OpenAI)';
+  const ai = client ?? new OpenAI({ apiKey, timeout: TIMEOUT_MS, maxRetries: 2 });
+  return {
+    async generate(prompt, { aspectRatio = '2:3', filePrefix = 'retrato', campaignId = null } = {}) {
+      let response;
+      try {
+        response = await ai.images.generate({ model, prompt, size: IMAGE_SIZES[aspectRatio] ?? '1024x1024', quality: 'medium', n: 1 });
+      } catch (err) {
+        if (/moderation|safety|content_policy/i.test(String(err?.message ?? '')) || err?.code === 'moderation_blocked') {
+          throw new HttpError(422, 'O filtro da OpenAI bloqueou esta descrição. Tente descrever de outro jeito.');
+        }
+        const failure = friendlyError(err, { label, model });
+        failure.message = `Imagem não gerada. ${failure.message}`;
+        throw failure;
+      }
+      const data = response?.data?.[0]?.b64_json;
+      if (!data) throw new HttpError(502, 'A OpenAI não devolveu a imagem. Tente de novo.');
+      const { buffer, extension } = decode(data);
+      return store({ buffer, extension, prefix: filePrefix, campaignId });
+    },
+  };
+}

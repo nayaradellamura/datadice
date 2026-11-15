@@ -96,16 +96,31 @@ export function readAiChoice(req, { required = true } = {}) {
 const optionalGeminiKey = (req) => ((req.get('x-gemini-key') ?? '').trim() ? readGeminiKey(req) : null);
 
 /**
+ * Quem gera as imagens: Gemini (padrão) ou OpenAI ("x-image-provider: openai", com a chave da OpenAI em
+ * "x-image-key"). Sem chave para a IA escolhida, não há imagens (null).
+ */
+export function readImageChoice(req, textChoice) {
+  if ((req.get('x-image-provider') ?? '').trim() === 'openai') {
+    const key = (req.get('x-image-key') ?? '').trim() || (textChoice?.provider === 'openai' ? textChoice.key : '');
+    if (!key) return null;
+    if (!OTHER_KEY_PATTERN.test(key)) throw new HttpError(401, 'A chave da OpenAI para imagens não parece uma chave. Copie de novo, sem aspas nem espaços.', 'gemini_key');
+    return { provider: 'openai', key };
+  }
+  const key = textChoice?.provider === 'gemini' ? textChoice.key : optionalGeminiKey(req);
+  return key ? { provider: 'gemini', key } : null;
+}
+
+/**
  * BYOK: cada requisição traz a chave do próprio jogador nos headers. Ela só fica na memória enquanto a
  * requisição e as imagens pedidas por ela estão em andamento; nunca é gravada nem vai para o log.
- * Imagens são sempre do Gemini: sem chave do Gemini, req.images fica null.
+ * Imagens: Gemini ou OpenAI; sem chave para a escolhida, req.images fica null.
  */
 export function requireGeminiKey({ createLlm, createImages }) {
   return (req, _res, next) => {
     const choice = readAiChoice(req);
     req.llm = createLlm(choice.key, choice);
-    const imageKey = choice.provider === 'gemini' ? choice.key : optionalGeminiKey(req);
-    req.images = imageKey ? createImages(imageKey, req.user) : null;
+    const image = readImageChoice(req, choice);
+    req.images = image ? createImages(image.key, req.user, image.provider) : null;
     next();
   };
 }

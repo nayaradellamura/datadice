@@ -13,7 +13,7 @@ export function visualRoutes(db, visuals, needsKey) {
 
   router.post('/visuals/:kind/:id/retry', needsKey, async (req, res) => {
     const { kind } = req.params;
-    if (!req.images) throw new HttpError(400, 'Imagens precisam da chave do Gemini. Cole uma em Configurações (pode ser junto com a chave da outra IA).', 'gemini_key');
+    if (!req.images) throw new HttpError(400, 'Para gerar imagens, cole em Configurações a chave do Gemini ou da OpenAI (em "Imagens", escolha quem gera).', 'gemini_key');
     if (!Object.hasOwn(VISUAL_KINDS, kind)) throw new HttpError(400, 'Tipo de imagem inválido.');
     await visualCampaignFor(db, req.user, VISUAL_KINDS[kind].table, req.params.id);
     res.status(202).json(await visuals.retry(kind, Number(req.params.id), req.images));

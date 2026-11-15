@@ -13,10 +13,10 @@ const SIGNATURES = [
 
 /** Confere pelos primeiros bytes que é mesmo uma imagem antes de gravar e servir o arquivo. */
 export function decodeImage(base64) {
-  if (typeof base64 !== 'string' || !base64) throw new HttpError(502, 'O Gemini não devolveu nenhuma imagem.');
+  if (typeof base64 !== 'string' || !base64) throw new HttpError(502, 'A IA não devolveu nenhuma imagem.');
   const buffer = Buffer.from(base64.replace(/^data:[^,]*,/, ''), 'base64');
   const format = SIGNATURES.find(({ bytes }) => bytes.every((byte, index) => buffer[index] === byte));
-  if (!format) throw new HttpError(502, 'O Gemini devolveu um arquivo que não é uma imagem válida.');
+  if (!format) throw new HttpError(502, 'A IA devolveu um arquivo que não é uma imagem válida.');
   return { buffer, extension: format.extension };
 }
 

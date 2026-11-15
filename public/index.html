@@ -114,69 +114,43 @@
       <button class="icon-button" value="close" aria-label="Fechar">✕</button>
     </form>
     <div class="settings-tabs segmented" role="tablist" aria-label="Configurações">
-      <button type="button" role="tab" id="settings-tab-key" data-tab="key" aria-controls="settings-pane-key">Chave e imagens</button>
+      <button type="button" role="tab" id="settings-tab-key" data-tab="key" aria-controls="settings-pane-key">IA e imagens</button>
       <button type="button" role="tab" id="settings-tab-usage" data-tab="usage" aria-controls="settings-pane-usage">Consumo IA</button>
     </div>
     <div id="settings-pane-key" role="tabpanel" aria-labelledby="settings-tab-key">
     <section class="settings-section">
-      <h3><label for="settings-provider">IA do Mestre</label></h3>
-      <select id="settings-provider">
-        <option value="gemini">Gemini (Google): grátis</option>
-        <option value="openai">ChatGPT (OpenAI): pago</option>
-        <option value="anthropic">Claude (Anthropic): pago</option>
-        <option value="openrouter">OpenRouter: vários modelos, alguns grátis</option>
-      </select>
-      <p id="settings-provider-note" class="muted small-print"></p>
-    </section>
-    <section class="settings-section" id="settings-other" hidden>
-      <h3><label for="settings-other-key" id="settings-other-title">Chave da IA</label></h3>
+      <h3>IA do Mestre</h3>
+      <p class="muted small-print">Quem narra e responde no Mestre IA. Mesas com amigos não usam IA.</p>
+      <div class="provider-grid" role="radiogroup" aria-label="IA do Mestre">
+        <button type="button" role="radio" class="provider-option" data-provider="gemini"><strong>Gemini</strong><small>Grátis</small></button>
+        <button type="button" role="radio" class="provider-option" data-provider="openai"><strong>ChatGPT</strong><small>Pago</small></button>
+        <button type="button" role="radio" class="provider-option" data-provider="anthropic"><strong>Claude</strong><small>Pago</small></button>
+        <button type="button" role="radio" class="provider-option" data-provider="openrouter"><strong>OpenRouter</strong><small>Vários, alguns grátis</small></button>
+      </div>
+      <p id="ai-note" class="muted small-print"></p>
+      <label for="ai-key" id="ai-key-label">Chave do Gemini</label>
       <div class="password-field">
-        <input id="settings-other-key" type="password" autocomplete="off" spellcheck="false" placeholder="Cole aqui sua chave de API">
-        <button type="button" class="eye-toggle" id="settings-other-toggle" aria-pressed="false" aria-controls="settings-other-key" aria-label="Mostrar chave" title="Mostrar chave">
+        <input id="ai-key" type="password" autocomplete="off" spellcheck="false" placeholder="Cole aqui sua chave">
+        <button type="button" class="eye-toggle" id="ai-key-toggle" aria-pressed="false" aria-controls="ai-key" aria-label="Mostrar chave" title="Mostrar chave">
               <svg class="eye-open" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
               <svg class="eye-closed" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M10.6 5.1A10.7 10.7 0 0 1 12 5c6.4 0 10 7 10 7a17.6 17.6 0 0 1-2.9 3.9M6.6 6.6A17.4 17.4 0 0 0 2 12s3.6 7 10 7a9.7 9.7 0 0 0 5.4-1.6"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/><path d="m3 3 18 18"/></svg>
             </button>
       </div>
-      <label for="settings-model">Modelo</label>
-      <div class="model-row">
-        <select id="settings-model"></select>
-        <button type="button" id="settings-models-load" class="small">Carregar lista</button>
+      <div id="ai-model-field" class="stack" hidden>
+        <label for="ai-model">Modelo</label>
+        <div class="model-row">
+          <select id="ai-model"></select>
+          <button type="button" id="ai-models-load" class="small">Ver todos</button>
+        </div>
       </div>
       <div class="settings-actions">
-        <button type="button" id="settings-other-test" class="primary">Testar conexão</button>
-        <a class="button" id="settings-other-link" href="#" target="_blank" rel="noopener noreferrer">Obter chave ↗</a>
+        <button type="button" id="ai-test" class="primary">Testar conexão</button>
+        <a class="button" id="ai-link" href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer">Obter chave ↗</a>
       </div>
-      <p id="settings-other-status" class="key-status" role="status" hidden></p>
+      <p id="ai-status" class="key-status" role="status" hidden></p>
       <details class="more">
         <summary>Saiba mais</summary>
-        <ul>
-          <li>A chave de API é <strong>cobrada à parte</strong> da assinatura do app (ChatGPT Plus ou Claude Pro não valem aqui). Você paga pelo uso, direto para a empresa.</li>
-          <li>A chave fica salva só neste navegador. O servidor não a guarda.</li>
-          <li>Imagens são sempre do Gemini: para tê-las, cole também a chave do Gemini abaixo.</li>
-        </ul>
-      </details>
-    </section>
-    <section class="settings-section">
-      <h3><label for="settings-key" id="settings-key-title">Chave do Gemini</label></h3>
-      <div class="password-field">
-        <input id="settings-key" type="password" autocomplete="off" spellcheck="false" placeholder="Cole aqui sua chave">
-        <button type="button" class="eye-toggle" id="settings-key-toggle" aria-pressed="false" aria-controls="settings-key" aria-label="Mostrar chave" title="Mostrar chave">
-              <svg class="eye-open" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
-              <svg class="eye-closed" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M10.6 5.1A10.7 10.7 0 0 1 12 5c6.4 0 10 7 10 7a17.6 17.6 0 0 1-2.9 3.9M6.6 6.6A17.4 17.4 0 0 0 2 12s3.6 7 10 7a9.7 9.7 0 0 0 5.4-1.6"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/><path d="m3 3 18 18"/></svg>
-            </button>
-      </div>
-      <div class="settings-actions">
-        <button type="button" id="settings-test" class="primary">Testar conexão</button>
-        <a class="button" href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer">Obter chave gratuita no Google ↗</a>
-      </div>
-      <p id="settings-status" class="key-status" role="status" hidden></p>
-      <details class="more">
-        <summary>Saiba mais</summary>
-        <ul>
-          <li>O Mestre usa a inteligência artificial do Google com a <strong>sua</strong> chave.</li>
-          <li>A chave fica salva só neste navegador e é usada apenas para falar com o Gemini. O servidor não a guarda.</li>
-          <li>O plano gratuito tem um limite de pedidos por dia, que volta por volta das 5h (horário de Brasília).</li>
-        </ul>
+        <ul id="ai-more"></ul>
       </details>
     </section>
     <section class="settings-section">
@@ -184,21 +158,30 @@
       <label class="switch">
         <input id="settings-images" type="checkbox" role="switch">
         <span class="switch-track" aria-hidden="true"></span>
-        <span>Gerar Ilustrações de Cenas e NPCs via Gemini</span>
+        <span>Gerar ilustrações de cenas e NPCs</span>
       </label>
-      <p class="muted small-print">Precisa de faturamento ativo na chave.</p>
-      <details class="more">
-        <summary>Saiba mais</summary>
-        <ul>
-          <li>O plano gratuito do Gemini <strong>não inclui imagens</strong>.</li>
-          <li>Com faturamento ativo, cada imagem custa cerca de US$ 0,03.</li>
-          <li>Desligado, o Mestre narra só em texto e sua chave gasta menos.</li>
-        </ul>
-      </details>
+      <div id="img-options" class="stack">
+        <div class="segmented img-provider" role="radiogroup" aria-label="Gerar imagens com">
+          <button type="button" role="radio" data-image-provider="gemini">Gemini</button>
+          <button type="button" role="radio" data-image-provider="openai">ChatGPT (OpenAI)</button>
+        </div>
+        <div id="img-key-field" class="stack" hidden>
+          <label for="img-key" id="img-key-label">Chave do Gemini</label>
+          <div class="password-field">
+            <input id="img-key" type="password" autocomplete="off" spellcheck="false" placeholder="Cole aqui a chave para as imagens">
+            <button type="button" class="eye-toggle" id="img-key-toggle" aria-pressed="false" aria-controls="img-key" aria-label="Mostrar chave" title="Mostrar chave">
+              <svg class="eye-open" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+              <svg class="eye-closed" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M10.6 5.1A10.7 10.7 0 0 1 12 5c6.4 0 10 7 10 7a17.6 17.6 0 0 1-2.9 3.9M6.6 6.6A17.4 17.4 0 0 0 2 12s3.6 7 10 7a9.7 9.7 0 0 0 5.4-1.6"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/><path d="m3 3 18 18"/></svg>
+            </button>
+          </div>
+        </div>
+        <p id="img-note" class="muted small-print"></p>
+      </div>
+      <p id="img-off-note" class="muted small-print">Desligado, o Mestre narra só em texto e a chave gasta menos.</p>
     </section>
     </div>
     <div id="settings-pane-usage" class="settings-section" role="tabpanel" aria-labelledby="settings-tab-usage" hidden>
-      <p class="muted small-print">Quanto a sua chave do Gemini gastou no DataDice.</p>
+      <p class="muted small-print">Quanto a sua chave de IA gastou no DataDice.</p>
       <div id="usage-periods" class="period-switch" role="group" aria-label="Período"></div>
       <p id="usage-error" class="error" role="alert" hidden></p>
       <div id="usage-content" class="stack"></div>

@@ -106,7 +106,7 @@ test('rotas: escolhe a IA pelos headers e explica o que falta', async () => {
     // Gerar imagem com outra IA e sem chave do Gemini: explica.
     const image = await fetch(`${base}/api/generate-image`, { method: 'POST', headers: { authorization: `Bearer ${ana.token}`, 'content-type': 'application/json', 'x-ai-provider': 'anthropic', 'x-ai-key': 'sk-ant-chavefalsa0123456789' }, body: JSON.stringify({ prompt: 'um elfo' }) });
     assert.equal(image.status, 400);
-    assert.match((await image.json()).error, /chave do Gemini/);
+    assert.match((await image.json()).error, /chave do Gemini ou da OpenAI/);
   } finally {
     app.locals.tableHub.closeAll();
     server.closeAllConnections?.();

@@ -63,6 +63,9 @@ export const settings = {
   get textKey() { return this.provider === 'gemini' ? this.apiKey : this.otherKey(this.provider); },
   get providerLabel() { return AI_PROVIDERS[this.provider]; },
   // Desligado por padrão: a geração de imagens do Gemini não tem cota gratuita.
+  // Quem gera as imagens: gemini (padrão) ou openai (usa a mesma chave da OpenAI do ChatGPT).
+  get imageProvider() { return readLocal('image_provider') === 'openai' ? 'openai' : 'gemini'; },
+  set imageProvider(value) { writeLocal('image_provider', value === 'openai' ? 'openai' : 'gemini'); },
   get imagesEnabled() { return readLocal('enable_image_gen') === 'true'; },
   set imagesEnabled(value) { writeLocal('enable_image_gen', value ? 'true' : 'false'); },
 };
@@ -157,6 +160,10 @@ export async function api(path, { method = 'GET', body, gemini = false } = {}) {
     }
     // A chave do Gemini também vale para as imagens, mesmo jogando com outra IA.
     if (settings.apiKey) headers['x-gemini-key'] = settings.apiKey;
+    if (settings.imageProvider === 'openai' && settings.otherKey('openai')) {
+      headers['x-image-provider'] = 'openai';
+      headers['x-image-key'] = settings.otherKey('openai');
+    }
   }
   let response;
   try {

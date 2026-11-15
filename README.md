@@ -167,8 +167,8 @@ Em **Personagens**, **Importar PDF** lê uma ficha e abre o formulário já pree
 O padrão é o Gemini, que é grátis. Em Configurações → "IA do Mestre", a pessoa pode trocar para ChatGPT (OpenAI), Claude (Anthropic) ou OpenRouter, colar a chave de API dessa empresa e escolher o modelo ("Carregar lista" mostra os modelos que a chave pode usar; no OpenRouter, os grátis aparecem primeiro). A chave de API é cobrada à parte da assinatura do app (ChatGPT Plus e Claude Pro não valem). Entrar com a conta (login) não é possível: esses serviços não deixam outro site usar a assinatura.
 
 - Padrões: ChatGPT `gpt-5.4-mini`, Claude `claude-opus-5-5` (com Sonnet 5.5 e Haiku 5.5 na lista). No Claude Opus e Sonnet, se o filtro de segurança recusar uma cena, a própria Anthropic tenta de novo com outro modelo Claude (troca automática).
-- Imagens continuam só pelo Gemini: quem joga com outra IA pode colar também a chave do Gemini.
-- As chaves ficam só no navegador, como a do Gemini, e vão nos cabeçalhos `x-ai-provider`, `x-ai-key` e `x-ai-model`. O servidor não as guarda.
+- Imagens: Gemini ou ChatGPT (OpenAI, modelo `gpt-image-2`; troque com `OPENAI_IMAGE_MODEL`), em Configurações → Imagens. Dá para jogar com uma IA e gerar imagens com outra; a tela só pede a segunda chave quando precisa.
+- As chaves ficam só no navegador, como a do Gemini, e vão nos cabeçalhos `x-ai-provider`, `x-ai-key`, `x-ai-model`, `x-image-provider` e `x-image-key`. O servidor não as guarda.
 
 ## Ver como (Painel Admin)
 

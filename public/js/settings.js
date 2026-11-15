@@ -1,18 +1,35 @@
-import { AI_PROVIDERS, api, bindEyeToggle, h, settings } from './api.js';
+import { api, bindEyeToggle, h, settings } from './api.js';
 import { renderUsage } from './usage.js';
 
 const el = (id) => document.getElementById(id);
 
-// Outras IAs: onde pegar a chave, o que avisar e os modelos conhecidos (a lista completa vem da chave).
-const OTHER = {
+/**
+ * Configurações, aba "IA e imagens": uma seção para a IA do Mestre (uma chave, a da IA escolhida)
+ * e uma para as imagens (só pede outra chave quando a IA das imagens não é a mesma do Mestre).
+ * As chaves ficam só neste navegador.
+ */
+const PROVIDERS = {
+  gemini: {
+    name: 'Gemini',
+    site: 'Google AI Studio',
+    link: 'https://aistudio.google.com/app/apikey',
+    note: 'Grátis, com limite diário. A chave é criada com a sua conta Google.',
+    more: [
+      'O Mestre usa a inteligência artificial do Google com a sua chave.',
+      'O plano gratuito tem um limite de pedidos por dia, que volta por volta das 5h (horário de Brasília).',
+    ],
+  },
   openai: {
-    site: 'OpenAI',
+    name: 'ChatGPT (OpenAI)',
+    site: 'site da OpenAI',
     link: 'https://platform.openai.com/api-keys',
     note: 'Usa a sua chave de API da OpenAI, cobrada à parte da assinatura do ChatGPT.',
     models: [['gpt-5.4-mini', 'gpt-5.4-mini (padrão, mais barato)']],
+    more: ['A chave de API é paga pelo uso, direto para a OpenAI. O ChatGPT Plus não vale aqui.'],
   },
   anthropic: {
-    site: 'Anthropic',
+    name: 'Claude (Anthropic)',
+    site: 'site da Anthropic',
     link: 'https://platform.claude.com/settings/keys',
     note: 'Usa a sua chave de API da Anthropic, cobrada à parte da assinatura do Claude.',
     models: [
@@ -20,81 +37,111 @@ const OTHER = {
       ['claude-sonnet-5-5', 'Sonnet 5.5 (equilibrado)'],
       ['claude-haiku-5-5', 'Haiku 5.5 (mais barato)'],
     ],
+    more: ['A chave de API é paga pelo uso, direto para a Anthropic. O Claude Pro não vale aqui.'],
   },
   openrouter: {
+    name: 'OpenRouter',
     site: 'OpenRouter',
     link: 'https://openrouter.ai/settings/keys',
-    note: 'Uma chave para vários modelos. Os marcados "(grátis)" não custam nada, mas têm limite de uso. Toque em "Carregar lista" e escolha um.',
+    note: 'Uma chave para centenas de modelos (Llama, Mistral, DeepSeek, Grok...). Os marcados "(grátis)" não custam nada, com limite de uso.',
     models: [],
+    more: ['Toque em "Ver todos" para escolher o modelo. Os grátis aparecem primeiro.'],
   },
 };
-const GEMINI_NOTE = 'Grátis, com limite diário. A chave é criada com a sua conta Google.';
 
-function setOtherStatus(state, message) {
-  const status = el('settings-other-status');
+const keyOf = (provider) => (provider === 'gemini' ? settings.apiKey : settings.otherKey(provider));
+function setKeyOf(provider, value) {
+  if (provider === 'gemini') settings.apiKey = value;
+  else settings.setOtherKey(provider, value);
+}
+
+function setStatus(state, message) {
+  const status = el('ai-status');
   status.className = `key-status ${state}`;
   status.textContent = message;
   status.hidden = !message;
 }
 
-/** Preenche a lista de modelos: os conhecidos (ou os que a chave trouxe) e o que já estava escolhido. */
+/** Lista de modelos: os conhecidos (ou os que a chave trouxe) e o que já estava escolhido. */
 function fillModels(provider, loaded = null) {
-  const select = el('settings-model');
+  const select = el('ai-model');
   const saved = settings.model(provider);
   const list = loaded
     ? loaded.map((item) => [item.id, item.free ? `${item.id} (grátis)` : item.id])
-    : [...(OTHER[provider]?.models ?? [])];
+    : [...(PROVIDERS[provider].models ?? [])];
   if (saved && !list.some(([id]) => id === saved)) list.unshift([saved, saved]);
-  if (!list.length) list.push(['', 'Toque em "Carregar lista"']);
+  if (!list.length) list.push(['', 'Toque em "Ver todos"']);
   select.replaceChildren(...list.map(([id, label]) => h('option', { value: id }, label)));
   select.value = saved && list.some(([id]) => id === saved) ? saved : list[0][0];
   if (select.value) settings.setModel(provider, select.value);
 }
 
-/** Mostra os campos da IA escolhida. A chave do Gemini continua lá (para as imagens). */
-function renderProvider() {
+/** Imagens: Gemini ou OpenAI. Pede a chave só se ela ainda não está em "IA do Mestre". */
+function renderImages() {
+  const on = el('settings-images').checked;
+  const image = settings.imageProvider;
+  el('img-options').hidden = !on;
+  el('img-off-note').hidden = on;
+  for (const button of document.querySelectorAll('[data-image-provider]')) {
+    const active = button.dataset.imageProvider === image;
+    button.classList.toggle('active', active);
+    button.setAttribute('aria-checked', String(active));
+  }
+  const sameKey = image === settings.provider;
+  const whose = image === 'openai' ? 'da OpenAI' : 'do Gemini';
+  el('img-key-field').hidden = sameKey;
+  el('img-key-label').textContent = `Chave ${whose} (para as imagens)`;
+  const keyInput = el('img-key');
+  if (document.activeElement !== keyInput) keyInput.value = keyOf(image);
+  let note = image === 'openai'
+    ? 'Cada imagem é cobrada na sua conta da OpenAI.'
+    : 'Precisa de faturamento ativo na chave do Gemini (o plano grátis não inclui imagens): cerca de US$ 0,03 por imagem.';
+  if (sameKey) note += ' Usa a mesma chave de cima.';
+  else if (!keyOf(image)) note += ` Sem a chave ${whose}, o jogo segue só em texto.`;
+  el('img-note').textContent = note;
+}
+
+/** Mostra a IA escolhida: chave, modelo (quando há), link e explicações. */
+function render() {
   const provider = settings.provider;
-  const other = provider !== 'gemini';
-  el('settings-provider').value = provider;
-  el('settings-provider-note').textContent = other ? OTHER[provider].note : GEMINI_NOTE;
-  el('settings-other').hidden = !other;
-  el('settings-key-title').textContent = other ? 'Chave do Gemini (opcional, só para imagens)' : 'Chave do Gemini';
-  if (!other) return;
-  el('settings-other-title').textContent = `Chave do ${AI_PROVIDERS[provider]}`;
-  el('settings-other-key').value = settings.otherKey(provider);
-  el('settings-other-link').href = OTHER[provider].link;
-  el('settings-other-link').textContent = `Obter chave no site da ${OTHER[provider].site} ↗`;
-  fillModels(provider);
-  setOtherStatus('', '');
+  const info = PROVIDERS[provider];
+  for (const button of document.querySelectorAll('.provider-option')) {
+    const active = button.dataset.provider === provider;
+    button.classList.toggle('active', active);
+    button.setAttribute('aria-checked', String(active));
+  }
+  el('ai-note').textContent = info.note;
+  el('ai-key-label').textContent = `Chave do ${info.name}`;
+  el('ai-key').value = keyOf(provider);
+  el('ai-model-field').hidden = provider === 'gemini';
+  if (provider !== 'gemini') fillModels(provider);
+  el('ai-link').href = info.link;
+  el('ai-link').textContent = `Obter chave no ${info.site} ↗`;
+  el('ai-more').replaceChildren(...[...info.more, 'A chave fica salva só neste navegador. O servidor não a guarda.'].map((text) => h('li', {}, text)));
+  setStatus('', '');
+  renderImages();
 }
 
 async function loadModels() {
   const provider = settings.provider;
-  if (!settings.otherKey(provider)) {
-    setOtherStatus('fail', 'Cole a sua chave antes de carregar a lista.');
+  if (!keyOf(provider)) {
+    setStatus('fail', 'Cole a sua chave antes de ver os modelos.');
     return false;
   }
-  el('settings-models-load').disabled = true;
+  el('ai-models-load').disabled = true;
   try {
     const { models } = await api('/config/models', { method: 'POST', body: {}, gemini: true });
     if (models.length) fillModels(provider, models);
     return true;
   } catch (err) {
-    setOtherStatus('fail', `Não deu para carregar a lista. ${err.message}`);
+    setStatus('fail', `Não deu para carregar os modelos. ${err.message}`);
     return false;
   } finally {
-    el('settings-models-load').disabled = false;
+    el('ai-models-load').disabled = false;
   }
 }
 
-function setStatus(state, message) {
-  const status = el('settings-status');
-  status.className = `key-status ${state}`;
-  status.textContent = message;
-  status.hidden = !message;
-}
-
-/** Abas das Configurações: "Chave e imagens" e "Consumo IA". */
+/** Abas das Configurações: "IA e imagens" e "Consumo IA". */
 function showTab(tab) {
   for (const button of document.querySelectorAll('.settings-tabs button')) {
     const active = button.dataset.tab === tab;
@@ -110,19 +157,14 @@ export function openSettings({ reason, tab = 'key' } = {}) {
   const dialog = el('settings-dialog');
   // Um aviso (ex.: falta a chave) sempre abre na aba da chave.
   showTab(reason ? 'key' : tab);
-  el('settings-key').value = settings.apiKey;
   el('settings-images').checked = settings.imagesEnabled;
-  renderProvider();
-  const other = settings.provider !== 'gemini';
-  if (reason) (other ? setOtherStatus : setStatus)('warn', reason);
+  render();
+  if (reason) setStatus('warn', reason);
   if (!dialog.open) dialog.showModal();
-  if (!settings.textKey) el(other ? 'settings-other-key' : 'settings-key').focus();
+  if (!settings.textKey) el('ai-key').focus();
 }
 
 export function initSettings() {
-  const keyInput = el('settings-key');
-  const toggle = el('settings-key-toggle');
-
   el('settings-open').addEventListener('click', () => openSettings());
   for (const button of document.querySelectorAll('.settings-tabs button')) {
     button.addEventListener('click', () => showTab(button.dataset.tab));
@@ -131,82 +173,64 @@ export function initSettings() {
   document.addEventListener('need-gemini-key', () =>
     openSettings({ reason: settings.textKey ? 'Confira a chave e o modelo da IA.' : `Cole sua chave do ${settings.providerLabel} para jogar.` }));
 
-  // Outras IAs: escolher, colar a chave, escolher o modelo e testar.
-  el('settings-provider').addEventListener('change', (event) => {
-    settings.provider = event.target.value;
-    renderProvider();
-  });
-  const otherInput = el('settings-other-key');
-  otherInput.addEventListener('input', () => {
-    settings.setOtherKey(settings.provider, otherInput.value);
-    setOtherStatus('', '');
-  });
-  const showOther = bindEyeToggle(el('settings-other-toggle'), otherInput, 'chave');
-  el('settings-model').addEventListener('change', (event) => settings.setModel(settings.provider, event.target.value));
-  el('settings-models-load').addEventListener('click', loadModels);
-  el('settings-other-test').addEventListener('click', async () => {
-    settings.setOtherKey(settings.provider, otherInput.value);
-    otherInput.value = settings.otherKey(settings.provider);
-    if (!settings.textKey) {
-      setOtherStatus('fail', 'Cole a sua chave antes de testar.');
-      return;
-    }
-    el('settings-other-test').disabled = true;
-    setOtherStatus('testing', 'Testando...');
-    try {
-      // OpenRouter não tem modelo padrão: carrega a lista antes, para haver o que testar.
-      if (!settings.model(settings.provider) && !(await loadModels())) return;
-      const result = await api('/config/test-key', { method: 'POST', body: {}, gemini: true });
-      setOtherStatus('ok', `Conectado. ${result.message}`);
-    } catch (err) {
-      setOtherStatus('fail', `Falha na chave. ${err.message}`);
-    } finally {
-      el('settings-other-test').disabled = false;
-    }
-  });
-  el('settings-dialog').addEventListener('close', () => showOther(false));
-
-  // A chave é salva assim que é digitada; o teste confirma se o Google aceita.
+  // IA do Mestre.
+  for (const button of document.querySelectorAll('.provider-option')) {
+    button.addEventListener('click', () => {
+      settings.provider = button.dataset.provider;
+      render();
+    });
+  }
+  const keyInput = el('ai-key');
+  // A chave é salva assim que é digitada; o teste confirma se a empresa aceita.
   keyInput.addEventListener('input', () => {
-    settings.apiKey = keyInput.value;
+    setKeyOf(settings.provider, keyInput.value);
     setStatus('', '');
+    renderImages();
   });
-
-  const showKey = bindEyeToggle(toggle, keyInput, 'chave');
-
-  el('settings-images').addEventListener('change', (event) => {
-    settings.imagesEnabled = event.target.checked;
-  });
-
-  el('settings-test').addEventListener('click', async () => {
-    settings.apiKey = keyInput.value;
-    keyInput.value = settings.apiKey; // mostra a chave já limpa (sem espaços, aspas ou prefixo)
-    if (!settings.apiKey) {
+  const showKey = bindEyeToggle(el('ai-key-toggle'), keyInput, 'chave');
+  el('ai-model').addEventListener('change', (event) => settings.setModel(settings.provider, event.target.value));
+  el('ai-models-load').addEventListener('click', loadModels);
+  el('ai-test').addEventListener('click', async () => {
+    const provider = settings.provider;
+    setKeyOf(provider, keyInput.value);
+    keyInput.value = keyOf(provider); // mostra a chave já limpa (sem espaços, aspas ou prefixo)
+    if (!keyOf(provider)) {
       setStatus('fail', 'Cole a sua chave antes de testar.');
       return;
     }
-    el('settings-test').disabled = true;
+    el('ai-test').disabled = true;
     setStatus('testing', 'Testando...');
     try {
-      // Este botão testa sempre a chave do Gemini, mesmo com outra IA escolhida.
-      const provider = settings.provider;
-      settings.provider = 'gemini';
-      let result;
-      try {
-        result = await api('/config/test-key', { method: 'POST', body: {}, gemini: true });
-      } finally {
-        settings.provider = provider;
-      }
+      // OpenRouter não tem modelo padrão: carrega a lista antes, para haver o que testar.
+      if (provider !== 'gemini' && !settings.model(provider) && !(await loadModels())) return;
+      const result = await api('/config/test-key', { method: 'POST', body: {}, gemini: true });
       setStatus('ok', `Conectado. ${result.message}`);
     } catch (err) {
       setStatus('fail', `Falha na chave. ${err.message}`);
     } finally {
-      el('settings-test').disabled = false;
+      el('ai-test').disabled = false;
     }
   });
 
-  // Fechar o diálogo devolve o foco à página; a chave já está salva.
+  // Imagens.
+  el('settings-images').addEventListener('change', (event) => {
+    settings.imagesEnabled = event.target.checked;
+    renderImages();
+  });
+  for (const button of document.querySelectorAll('[data-image-provider]')) {
+    button.addEventListener('click', () => {
+      settings.imageProvider = button.dataset.imageProvider;
+      renderImages();
+    });
+  }
+  el('img-key').addEventListener('input', (event) => {
+    setKeyOf(settings.imageProvider, event.target.value);
+    renderImages();
+  });
+  const showImageKey = bindEyeToggle(el('img-key-toggle'), el('img-key'), 'chave');
+
   el('settings-dialog').addEventListener('close', () => {
     showKey(false);
+    showImageKey(false);
   });
 }
