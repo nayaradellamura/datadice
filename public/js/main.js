@@ -73,9 +73,18 @@ function enterHome() {
   }
 }
 
-async function renderHome() {
+/** Sem chave de IA, o Mestre IA não tem como jogar: o cartão mostra só "Colocar a chave". */
+function renderHomeKey() {
   const hasKey = Boolean(settings.textKey);
-  document.getElementById('home-ia-key').hidden = hasKey;
+  document.getElementById('home-ia-go').hidden = !hasKey;
+  const keyButton = document.getElementById('home-ia-key');
+  keyButton.hidden = hasKey;
+  keyButton.classList.toggle('primary', !hasKey);
+  document.getElementById('home-ia-status').hidden = hasKey;
+}
+
+async function renderHome() {
+  renderHomeKey();
   const [campaigns, tables] = await Promise.all([
     api('/campaigns').catch(() => []),
     api('/tables').catch(() => []),
@@ -88,9 +97,7 @@ async function renderHome() {
   };
   count('home-ia-count', mine.length, 'campanha', 'campanhas');
   count('home-mesa-count', tables.length, 'mesa', 'mesas');
-  const iaStatus = document.getElementById('home-ia-status');
-  iaStatus.hidden = hasKey;
-  iaStatus.textContent = 'Precisa de uma chave de IA. A do Gemini é grátis.';
+  document.getElementById('home-ia-status').textContent = 'Precisa de uma chave de IA. A do Gemini é grátis.';
   document.getElementById('home-ia-go').textContent = mine.length ? 'Continuar' : 'Jogar';
   document.getElementById('home-mesa-go').hidden = !tables.length;
 }
@@ -298,6 +305,10 @@ initUsage();
 document.querySelector('header h1').addEventListener('click', () => showView('home').catch(viewFailed));
 document.getElementById('home-ia-go').addEventListener('click', () => showView('game').catch(viewFailed));
 document.getElementById('home-ia-key').addEventListener('click', () => document.dispatchEvent(new CustomEvent('open-settings')));
+// Colou a chave nas Configurações e fechou: o cartão do Mestre IA já mostra "Jogar".
+document.getElementById('settings-dialog').addEventListener('close', () => {
+  if (!document.getElementById('view-home').hidden) renderHomeKey();
+});
 document.getElementById('home-mesa-go').addEventListener('click', () => showView('tables').catch(viewFailed));
 document.getElementById('home-mesa-new').addEventListener('click', async () => {
   await showView('tables').catch(viewFailed);
