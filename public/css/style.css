@@ -1273,7 +1273,10 @@ header h1 { cursor: pointer; }
 }
 
 /* Início: tela limpa, sem menus. Dois cartões com ilustração, título, uma linha e os botões. */
-body[data-mode="home"] .topbar nav, body[data-mode="home"] #mode-switch { display: none; }
+body[data-mode="home"] #mode-switch { display: none; }
+/* No Início o menu some, menos o "Admin" (só aparece para quem é admin). */
+body[data-mode="home"] .topbar nav > :not(#admin-menu-button) { display: none; }
+body[data-mode="home"]:not(:has(#admin-menu-button:not([hidden]))) .topbar nav { display: none; }
 .home { display: flex; flex-direction: column; align-items: center; gap: 1.25rem; padding-block: 1rem 2rem; }
 .home-title { text-align: center; font-size: clamp(1.5rem, 4vw, 2.1rem); }
 .home-modes { width: min(100%, 860px); display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 1.1rem; }
