@@ -11,7 +11,7 @@ export function adminRoutes(db, { hub } = {}) {
 
   router.get('/users', async (_req, res) => {
     res.json(await db.all(
-      `SELECT u.id, u.name, u.email, u.role, u.created_at,
+      `SELECT u.id, u.name, u.email, u.role, u.created_at, u.last_seen_at,
               (SELECT COUNT(*) FROM characters c WHERE c.user_id = u.id) AS characters,
               (SELECT COUNT(*) FROM campaigns c WHERE c.user_id = u.id AND c.mode <> 'grupo') AS campaigns,
               (SELECT COUNT(*) FROM campaigns c WHERE c.user_id = u.id AND c.mode = 'grupo') AS tables,
@@ -31,6 +31,34 @@ export function adminRoutes(db, { hub } = {}) {
     if (user.id === req.user.id && role !== 'admin') throw new HttpError(400, 'Você não pode remover o seu próprio acesso de admin.');
     await db.run('UPDATE users SET role = ? WHERE id = ?', role, user.id);
     res.json({ id: user.id, role });
+  });
+
+  /**
+   * Registro de atividade, do mais novo para o mais antigo, 100 por vez.
+   * ?user=ID só uma conta; ?errors=1 só o que deu erro; ?before=ID continua a lista.
+   */
+  router.get('/activity', async (req, res) => {
+    const where = [];
+    const params = [];
+    const user = asId(req.query.user);
+    if (user) {
+      where.push('a.user_id = ?');
+      params.push(user);
+    }
+    if (req.query.errors === '1') where.push('(a.status >= 400 OR a.status = 0)');
+    const before = asId(req.query.before);
+    if (before) {
+      where.push('a.id < ?');
+      params.push(before);
+    }
+    const rows = await db.all(
+      `SELECT a.id, a.created_at, a.user_id, u.name AS user_name, a.action, a.detail, a.status, a.error, a.duration_ms
+       FROM activity_log a LEFT JOIN users u ON u.id = a.user_id
+       ${where.length ? `WHERE ${where.join(' AND ')}` : ''}
+       ORDER BY a.id DESC LIMIT 101`,
+      ...params,
+    );
+    res.json({ items: rows.slice(0, 100), more: rows.length > 100 });
   });
 
   // Pedidos de "Esqueci minha senha" ainda não atendidos.

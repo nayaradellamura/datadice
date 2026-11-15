@@ -44,11 +44,14 @@ export function authRoutes(db, { secret, registrationCode, limits = DEFAULT_LIMI
       if (err.code === '23505') throw new HttpError(409, 'Já existe uma conta com este e-mail.');
       throw err;
     }
+    res.locals.activityUserId = user.id;
     res.status(201).json({ token: signToken(user, secret), user: publicUser(user) });
   });
 
   router.post('/login', limiter, async (req, res) => {
     const user = await db.get('SELECT * FROM users WHERE email = ?', normalizeEmail(req.body?.email));
+    // Senha errada também fica no registro da conta (ajuda a saber quem não está conseguindo entrar).
+    res.locals.activityUserId = user?.id;
     if (!(await checkPassword(user, req.body?.password))) throw new HttpError(401, 'E-mail ou senha incorretos.');
     // Lembrou a senha: o pedido de nova senha deixa de ser necessário.
     await db.run('DELETE FROM password_reset_requests WHERE user_id = ?', user.id);
@@ -59,6 +62,8 @@ export function authRoutes(db, { secret, registrationCode, limits = DEFAULT_LIMI
   router.post('/forgot', limiter, async (req, res) => {
     const email = typeof req.body?.email === 'string' ? req.body.email : '';
     if (!email.trim()) throw new HttpError(400, 'Digite o seu e-mail.');
+    const known = await db.get('SELECT id FROM users WHERE email = ? AND password_hash IS NOT NULL', normalizeEmail(email));
+    res.locals.activityUserId = known?.id;
     await requestPasswordReset(db, email);
     res.json({ message: 'Pedido enviado. O administrador do DataDice vai te mandar um link para criar uma nova senha (vale por 1 hora).' });
   });
@@ -66,6 +71,7 @@ export function authRoutes(db, { secret, registrationCode, limits = DEFAULT_LIMI
   // Nova senha pelo link que o admin gerou. Entra direto na conta depois de trocar.
   router.post('/reset', limiter, async (req, res) => {
     const user = await usePasswordReset(db, req.body?.token, req.body?.password);
+    res.locals.activityUserId = user.id;
     res.json({ token: signToken(user, secret), user: publicUser(user) });
   });
 

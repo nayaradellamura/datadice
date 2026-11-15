@@ -2,6 +2,7 @@ import { api, store } from './api.js';
 import { initAdmin, refreshAdminBadge, renderAdmin, renderMetrics } from './admin.js';
 import { initCampaigns, renderCampaigns } from './campaign.js';
 import { initCharacterForm, openCharacter, openForeignCharacter, refreshRoster } from './character.js';
+import { initErrorReport } from './error-report.js';
 import { initGame, refreshGameSelectors, refreshIllustrations } from './game.js';
 import { initLibrary, renderLibrary } from './library.js';
 import { logout, requireLogin } from './login.js';
@@ -15,6 +16,7 @@ import { initUsage } from './usage.js';
 const PLAYER_VIEWS = ['game', 'characters', 'campaigns', 'tables', 'templates', 'library'];
 const ADMIN_VIEWS = ['notebook', 'metrics', 'admin'];
 
+initErrorReport();
 const user = await requireLogin();
 const admin = user.role === 'admin';
 const VIEWS = admin ? [...PLAYER_VIEWS, ...ADMIN_VIEWS] : PLAYER_VIEWS;

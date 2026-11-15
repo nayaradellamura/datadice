@@ -1,5 +1,6 @@
 import { fileURLToPath } from 'node:url';
 import express from 'express';
+import { activityLog, clientErrorRoutes, touchLastSeen } from './middleware/activity.js';
 import { authenticateToken, requireGeminiKey } from './middleware/auth.js';
 import { errorHandler, notFoundApi } from './middleware/errorHandler.js';
 import { adminRoutes } from './routes/admin.js';
@@ -76,6 +77,8 @@ export function createApp({
   joinLimits,
   trustProxy = false,
   hsts = false,
+  // Na hospedagem, cada ação registrada também sai numa linha do log do servidor.
+  activityConsole = false,
 }) {
   if (!jwtSecret) throw new Error('jwtSecret é obrigatório.');
   const app = express();
@@ -118,10 +121,13 @@ export function createApp({
     },
   }));
 
+  // Registro de atividade (Painel Admin): ações que mudam algo e os erros, de todas as rotas abaixo.
+  app.use('/api', activityLog(db, { console: activityConsole }));
   app.use('/api/auth', authRoutes(db, { secret: jwtSecret, registrationCode, ...(authLimits ? { limits: authLimits } : {}) }));
 
   // Daqui em diante, tudo exige login.
-  app.use('/api', authenticateToken(db, jwtSecret));
+  app.use('/api', authenticateToken(db, jwtSecret), touchLastSeen(db));
+  app.use('/api/client-error', clientErrorRoutes(db, { console: activityConsole }));
   const bigJson = express.json({ limit: '4500kb' });
   app.use((req, res, next) => (bigBody(req) ? bigJson(req, res, next) : next()));
   app.get('/api/auth/me', (req, res) => res.json(publicUser(req.user)));

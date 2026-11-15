@@ -46,6 +46,7 @@ const app = createApp({
   trustProxy: Number(env.TRUST_PROXY) || false,
   // Só na hospedagem, que sempre tem HTTPS. No computador local (http) isso travaria o navegador.
   hsts: env.NODE_ENV === 'production',
+  activityConsole: env.NODE_ENV === 'production',
 });
 
 await app.locals.visuals.failInterrupted();

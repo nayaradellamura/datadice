@@ -1210,3 +1210,16 @@ input, select { min-height: 2.25rem; }
   .dice-fx, .dice-fx-caption { transition: none; }
   .dice-fx-shape, .dice-fx-die { animation: none !important; }
 }
+
+/* Painel Admin: atividade das contas. */
+.activity-filters { display: flex; flex-wrap: wrap; gap: .75rem; align-items: end; }
+.activity-filters label:first-child { flex: 1 1 12rem; }
+.activity-filters .check { display: flex; gap: .4rem; align-items: center; }
+.activity-list { list-style: none; margin: 0; padding: 0; display: grid; gap: .1rem; }
+.activity-list li { display: grid; grid-template-columns: 6.5rem 1fr; gap: .6rem; padding: .45rem 0; border-bottom: 1px solid var(--line); font-size: .9rem; overflow-wrap: anywhere; }
+.activity-when { color: var(--muted); font-variant-numeric: tabular-nums; font-size: .8rem; padding-top: .1rem; }
+.activity-error { display: block; color: var(--danger); font-size: .85rem; margin-top: .15rem; }
+.activity-list li.failed { border-left: 3px solid var(--danger); padding-left: .5rem; }
+@media (max-width: 520px) {
+  .activity-list li { grid-template-columns: 1fr; gap: .1rem; }
+}

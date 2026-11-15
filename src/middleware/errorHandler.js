@@ -23,5 +23,7 @@ export function errorHandler(err, _req, res, _next) {
   const message = status === 500 ? 'Erro interno do servidor.'
     : err.type === 'entity.too.large' ? 'O arquivo enviado é grande demais.'
       : ours || err.expose ? err.message : 'Requisição inválida.';
+  // O registro de atividade guarda a mesma mensagem que a pessoa viu.
+  res.locals.errorMessage = message;
   res.status(status).json({ error: message, ...(ours && err.code ? { code: err.code } : {}) });
 }

@@ -172,6 +172,68 @@ async function makeResetLink(user) {
   }
 }
 
+const when = (value) => new Date(value).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+
+/**
+ * Atividade: o que cada conta fez (criar ficha, importar PDF, entrar...) e o que deu erro.
+ * Filtra por conta e por "só erros"; carrega 100 por vez.
+ */
+function activityCard(users) {
+  const list = h('ol', { class: 'activity-list', id: 'admin-activity' });
+  const more = h('button', { type: 'button', class: 'small', hidden: true }, 'Carregar mais');
+  const who = h('select', { 'aria-label': 'Conta' },
+    h('option', { value: '' }, 'Todas as contas'),
+    users.map((user) => h('option', { value: String(user.id) }, user.name)));
+  const errorsOnly = h('input', { type: 'checkbox' });
+  const status = h('p', { class: 'muted' });
+  let last = null;
+
+  const item = (row) => {
+    const failed = row.status >= 400 || row.status === 0;
+    return h('li', { class: failed ? 'failed' : '' },
+      h('span', { class: 'activity-when' }, when(row.created_at)),
+      h('span', { class: 'activity-what' },
+        h('strong', {}, row.user_name ?? 'Sem conta'), ' ',
+        row.action,
+        row.detail && h('span', { class: 'muted' }, ` · ${row.detail}`),
+        failed && h('span', { class: 'activity-error' }, row.status === 0 ? row.error : `Erro ${row.status}: ${row.error ?? ''}`)));
+  };
+
+  async function load(reset) {
+    if (reset) {
+      last = null;
+      list.replaceChildren();
+    }
+    const query = new URLSearchParams();
+    if (who.value) query.set('user', who.value);
+    if (errorsOnly.checked) query.set('errors', '1');
+    if (last) query.set('before', String(last));
+    try {
+      const { items, more: hasMore } = await api(`/admin/activity?${query}`);
+      list.append(...items.map(item));
+      last = items.at(-1)?.id ?? last;
+      more.hidden = !hasMore;
+      status.textContent = list.children.length ? '' : 'Nada registrado ainda.';
+    } catch (err) {
+      showError(el('admin-error'), err);
+    }
+  }
+  who.addEventListener('change', () => load(true));
+  errorsOnly.addEventListener('change', () => load(true));
+  more.addEventListener('click', () => load(false));
+  load(true);
+
+  return h('div', { class: 'card activity-card' },
+    h('h3', {}, 'Atividade'),
+    h('p', { class: 'muted small-print' }, 'O que cada conta fez e o que deu erro, dos últimos 60 dias. Mensagens, rolagens e anotações só aparecem quando dão erro; o conteúdo delas nunca é gravado.'),
+    h('div', { class: 'activity-filters' },
+      h('label', {}, 'Conta', who),
+      h('label', { class: 'check' }, errorsOnly, ' Só erros')),
+    status,
+    list,
+    more);
+}
+
 /** Remove a conta, depois de confirmar o que vai junto. */
 async function removeUser(user) {
   const parts = [
@@ -214,6 +276,7 @@ export async function renderAdmin() {
         table([
           ['Nome', (row) => h('span', {}, h('strong', {}, row.name), h('br'), h('span', { class: 'muted' }, row.email))],
           ['Desde', (row) => date(row.created_at)],
+          ['Visto', (row) => (row.last_seen_at ? ago(row.last_seen_at) : h('span', { class: 'muted' }, 'nunca'))],
           ['Personagens', (row) => number(row.characters)],
           ['Campanhas', (row) => number(row.campaigns)],
           ['Mesas', (row) => number(row.tables)],
@@ -233,6 +296,7 @@ export async function renderAdmin() {
             ? h('span', { class: 'muted' }, '—')
             : h('button', { type: 'button', class: 'small danger', onclick: () => removeUser(row) }, 'Remover')],
         ], users)),
+      activityCard(users),
     );
     showError(el('admin-error'), null);
   } catch (err) {

@@ -162,6 +162,12 @@ Em **Personagens**, **Importar PDF** lê uma ficha e abre o formulário já pree
 - Proficiências são deduzidas dos bônus escritos; um valor que não bate com o cálculo vira ajuste manual.
 - Limites: 10 MB, 12 páginas, 6 importações por minuto. O PDF é só lido (sem scripts, sem XFA) e não é guardado.
 
+## Atividade (Painel Admin)
+
+O Painel Admin mostra o que cada conta fez nos últimos 60 dias: criar conta, entrar (inclusive senha errada), criar e editar fichas, importar PDF (e se foi lida pelo modelo conhecido ou com IA), campanhas, mesas, modelos e as ações do admin. Também aparecem os erros que a pessoa viu e os erros de tela no navegador dela (ex.: um botão que quebrou no celular). Dá para filtrar por conta e por "Só erros". A lista de contas ganhou a coluna "Visto" (último uso).
+
+Mensagens, rolagens, iniciativa e anotações só entram quando dão erro, e o conteúdo delas nunca é gravado. Senhas, chaves e o corpo das requisições também não. O registro some junto com a conta. Na hospedagem, cada linha também sai no log do servidor (Render → Logs, começa com `[atividade]`).
+
 ## Retrato enviado pelo jogador
 
 Na Página 2 da ficha, **Enviar imagem** aceita PNG, JPG ou WebP. O navegador reduz a imagem para no máximo 1024 px e a regrava em JPEG (o que tira metadados, como a localização da foto). O servidor confere o formato pelos primeiros bytes, limita a 3 MB e grava no banco com nome aleatório.
