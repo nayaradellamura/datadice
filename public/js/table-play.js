@@ -440,8 +440,11 @@ function renderDiceTools() {
       groups.map((group) => h('optgroup', { label: group }, creatures.filter((item) => item.group === group).map((item) =>
         h('option', { value: item.key, selected: item.key === rollAs }, item.name))))));
   // Jogador com ficha: os testes, perícias, armas e iniciativa dela aparecem aqui mesmo, no chat.
-  const member = gm ? null : myMember();
+  const mine = gm ? null : myMember();
+  // Personagem morto não rola pela ficha; os dados livres continuam.
+  const member = mine?.status === 'dead' ? null : mine;
   fill(box,
+    mine?.status === 'dead' && h('p', { class: 'muted' }, `${mine.name} morreu. Troque de ficha na aba Grupo para voltar a rolar testes e ataques.`),
 
     secretSwitch(),
     picker,
@@ -450,11 +453,11 @@ function renderDiceTools() {
     creature && creatureRolls(creature),
     member && sheetRolls(member, { compact: true }),
     (member || creature) && h('h4', {}, 'Outros dados'),
-    !isGm() && !member && h('p', { class: 'muted' }, 'Escolha sua ficha na aba Mesa para rolar testes, perícias e ataques daqui.'),
+    !isGm() && !mine && h('p', { class: 'muted' }, 'Escolha sua ficha na aba Mesa para rolar testes, perícias e ataques daqui.'),
     h('div', { class: 'die-row' }, [4, 6, 8, 10, 12, 20, 100].map((sides) => h('button', {
       type: 'button',
       onclick: () => (sides === 20
-        ? (isGm() ? rollD20({ kind: 'plain', label: asLabel() }) : (myMember() ? rollD20({ kind: 'plain' }) : roll({ kind: 'dice', expression: '1d20' })))
+        ? (isGm() ? rollD20({ kind: 'plain', label: asLabel() }) : (member ? rollD20({ kind: 'plain' }) : roll({ kind: 'dice', expression: '1d20' })))
         : roll({ kind: 'dice', expression: `1d${sides}`, label: asLabel() })),
     }, `d${sides}`))),
     h('form', { class: 'roll-row', onsubmit: (event) => { event.preventDefault(); roll({ kind: 'dice', expression: expression.value, label: asLabel() }); } },
@@ -541,10 +544,31 @@ function sheetRolls(member, { compact = false } = {}) {
       h('button', { type: 'button', class: 'danger', onclick: () => roll({ kind: 'death' }) }, 'Salvaguarda contra a morte'));
 }
 
+/** Ficha morta na mesa: trocar por outra (ou criar uma) para continuar. */
+function fallenNotice(member) {
+  return h('div', { class: 'card fallen-card stack' },
+    h('h3', {}, `${member.name} morreu`),
+    h('p', {}, 'Você continua na mesa. Escolha outra ficha para seguir a aventura; a mesa fica sabendo da troca.'),
+    h('button', { type: 'button', class: 'primary', onclick: () => showPane('mesa') }, 'Escolher outra ficha'),
+    h('button', {
+      type: 'button',
+      onclick: () => {
+        store.set('tables.return', String(table.id));
+        document.dispatchEvent(new CustomEvent('new-character'));
+      },
+    }, 'Criar ficha nova'),
+    h('p', { class: 'muted small-print' }, 'Se a história trouxer o personagem de volta, é o Mestre quem marca.'));
+}
+
 function renderSheetPane() {
   if (isGm() || !el('tp-sheet')) return;
   render('tp-sheet', () => {
     const member = myMember();
+    if (member?.status === 'dead') {
+      fill(el('tp-sheet'), fallenNotice(member),
+        h('button', { type: 'button', onclick: () => openSheetView(member, { state: member }) }, `Ver ficha de ${member.name}`));
+      return;
+    }
     if (!member) {
       el('tp-sheet').replaceChildren(h('div', { class: 'card stack' },
         h('h3', {}, 'Escolha sua ficha'),
@@ -604,7 +628,8 @@ function gmPartyCard(member) {
     return patchParty(member.character_id, { hp_delta: sign * value });
   };
   const conditions = h('input', { value: member.conditions.join(', '), placeholder: 'Ex.: Envenenado, Caído', 'aria-label': `Condições de ${member.name}` });
-  return h('article', { class: 'card tp-pc' },
+  const dead = member.status === 'dead';
+  return h('article', { class: `card tp-pc ${dead ? 'is-dead' : ''}` },
     h('div', { class: 'member-head' },
       member.avatar_url ? h('img', { src: member.avatar_url, alt: '' }) : h('span', { class: 'table-avatar', 'aria-hidden': 'true' }, member.name[0]),
       h('div', {}, h('div', { class: 'member-name' }, member.name),
@@ -624,6 +649,14 @@ function gmPartyCard(member) {
           h('label', {}, 'Condições (separe por vírgula)', conditions), h('button', {}, 'Salvar')),
         h('div', { class: 'tp-pc-actions' },
           h('button', { type: 'button', class: 'small', onclick: () => patchParty(member.character_id, { inspiration: !member.inspiration }) }, member.inspiration ? 'Tirar Inspiração' : 'Dar Inspiração'),
+          dead
+            ? h('button', { type: 'button', class: 'small', onclick: () => patchParty(member.character_id, { status: 'active', current_hp: 1 }) }, 'Trazer de volta (1 PV)')
+            : h('button', {
+              type: 'button',
+              class: 'small danger',
+              onclick: () => window.confirm(`Marcar ${member.name} como morto? A mesa toda fica sabendo, e ${member.owner_name} poderá escolher outra ficha.`)
+                && patchParty(member.character_id, { status: 'dead', current_hp: 0 }),
+            }, 'Marcar como morto'),
           h('button', { type: 'button', class: 'small', onclick: () => openSheetView(member, { state: member }) }, 'Ver ficha'),
           h('button', {
             type: 'button',

@@ -355,12 +355,53 @@ async function finishSession() {
   }
 }
 
+/**
+ * Personagem morto nesta campanha: a história continua com outro. Mostra quem do grupo ainda está vivo,
+ * as fichas que podem entrar agora e o atalho para criar uma nova.
+ */
+let myCharacters = [];
+function fallenCard(member) {
+  const alive = party.filter((row) => row.character_id !== member.character_id && row.status !== 'dead');
+  const inParty = new Set(party.map((row) => row.character_id));
+  const candidates = myCharacters.filter((character) => !inParty.has(character.id));
+  const pick = h('select', { 'aria-label': 'Personagem que entra na aventura' },
+    candidates.map((character) => h('option', { value: String(character.id) }, `${character.name} (${character.race}, ${character.class} ${character.level})`)));
+  const choose = (id) => {
+    el('game-character').value = String(id);
+    store.set('character', String(id));
+    renderMember();
+  };
+  async function enter() {
+    showError(el('chat-error'), null);
+    try {
+      await api('/campaigns/join', { method: 'POST', body: { campaign_id: campaignId(), character_id: Number(pick.value) } });
+      el('game-character').value = pick.value;
+      store.set('character', pick.value);
+      await loadCampaign();
+    } catch (err) {
+      showError(el('chat-error'), err);
+    }
+  }
+  return h('div', { class: 'card fallen-card stack' },
+    h('h3', {}, `${member.name} morreu`),
+    h('p', {}, 'A história continua. Escolha outro personagem para seguir a aventura: o Mestre vai apresentá-lo na próxima cena.'),
+    alive.length > 0 && h('div', { class: 'fallen-actions' }, alive.map((row) =>
+      h('button', { type: 'button', class: 'primary', onclick: () => choose(row.character_id) }, `Jogar com ${row.name}`))),
+    candidates.length > 0 && h('div', { class: 'row fallen-actions' },
+      h('label', {}, 'Entrar na aventura', pick),
+      h('button', { type: 'button', class: alive.length ? '' : 'primary', onclick: enter }, 'Entrar')),
+    h('button', { type: 'button', onclick: () => document.dispatchEvent(new CustomEvent('new-character')) }, 'Criar personagem novo'),
+    h('p', { class: 'muted small-print' }, `Se a história trouxer ${member.name} de volta (ex.: a magia Revivificar), mude o Estado em "Ajustar estado na campanha".`));
+}
+
 function renderMember() {
   const panel = el('member-panel');
   const member = currentMember();
+  const dead = member?.status === 'dead';
   el('game-join').hidden = !(campaignId() && characterId() && !member);
-  el('chat-input').disabled = !member || member.status === 'dead';
-  el('chat-send').disabled = !member || member.status === 'dead' || sending;
+  el('chat-input').disabled = !member || dead;
+  el('chat-send').disabled = !member || dead || sending;
+  el('chat-input').placeholder = dead ? `${member.name} morreu. Escolha outro personagem ao lado para continuar.` : 'O que você faz?';
   renderSessionGate(member);
   if (!member) {
     panel.replaceChildren();
@@ -373,7 +414,9 @@ function renderMember() {
   const coins = meta.coins.filter((coin) => member.coins[coin]).map((coin) => `${member.coins[coin]} ${coin.toUpperCase()}`);
 
   panel.replaceChildren(
-    h('div', { class: 'stack' },
+    h('div', { class: `stack ${dead ? 'is-dead' : ''}` },
+      // Morto: o "e agora?" vem primeiro, antes de tudo.
+      dead && fallenCard(member),
       h('div', { class: 'card' },
         h('div', { class: 'member-head' },
           member.avatar_url && h('img', { src: member.avatar_url, alt: `Retrato de ${member.name}` }),
@@ -383,7 +426,7 @@ function renderMember() {
         h('span', { class: `status-badge ${member.status}` }, STATUS_LABELS[member.status] ?? member.status),
         h('div', { class: `hp-bar ${percent <= 30 ? 'low' : ''}`, role: 'img', 'aria-label': `${member.current_hp} de ${member.max_hp} pontos de vida` }, h('i', { style: `width:${percent}%` })),
         h('p', {}, `PV ${member.current_hp}/${member.max_hp}${member.temp_hp ? ` + ${member.temp_hp} temp.` : ''}`),
-        member.current_hp === 0 && h('p', { class: 'muted' }, `Contra a morte: ${member.death_successes} sucesso(s), ${member.death_failures} falha(s)`),
+        member.current_hp === 0 && !dead && h('p', { class: 'muted' }, `Contra a morte: ${member.death_successes} sucesso(s), ${member.death_failures} falha(s)`),
         h('div', { class: 'stat-grid' },
           [['CA', member.armor_class], ['Iniciativa', signed(derived.initiative)], ['Desloc.', member.speed],
             ['Proficiência', signed(derived.proficiency_bonus)], ['Perc. passiva', derived.passive_perception], ['Dados vida', `${member.level - member.hit_dice_used}d${member.hit_die}`]]
@@ -398,7 +441,7 @@ function renderMember() {
         session?.status === 'active' && h('button', { type: 'button', class: 'edit-sheet', id: 'session-end', onclick: finishSession }, 'Encerrar sessão'),
         manualEditor(member),
       ),
-      rollControls(member),
+      !dead && rollControls(member),
       member.conditions.length > 0 && h('div', { class: 'card' }, h('h3', {}, 'Condições'), chips(member.conditions, 'condition')),
       h('div', { class: 'card' },
         h('h3', {}, 'Inventário'), inventoryList(member.inventory),
@@ -437,6 +480,7 @@ export function selectedCampaign() {
 
 export async function refreshGameSelectors() {
   const [campaigns, characters] = await Promise.all([api('/campaigns'), api('/characters')]);
+  myCharacters = characters;
   const previousCampaign = campaignId() ?? store.get('campaign') ?? '';
   const previousCharacter = characterId() ?? store.get('character') ?? '';
   fillSelect(el('game-campaign'), campaigns.map((c) => ({ value: c.id, label: campaignLabel(c) })), { placeholder: 'Escolha uma campanha', value: previousCampaign });

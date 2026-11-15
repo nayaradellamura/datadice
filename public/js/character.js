@@ -572,6 +572,7 @@ function characterCard(character, index) {
     h('span', { class: 'card-abilities' },
       meta.abilities.map(({ key, short }) =>
         h('span', { class: character[key] === best ? 'best' : '' }, h('small', {}, short), h('b', {}, signed(derived.modifiers[key]))))),
+    character.fallen_in?.length > 0 && h('span', { class: 'card-fallen' }, `Morreu em: ${character.fallen_in.join(', ')}`),
     h('span', { class: 'card-action' }, label),
   );
 }

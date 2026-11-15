@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { HttpError } from '../middleware/errorHandler.js';
 import { rateLimit } from '../middleware/rateLimit.js';
 import { positiveId } from '../http/validate.js';
+import { postTableMessage } from './tablePlay.js';
 import {
   formatJoinCode, linkCharacter, MAX_PENDING, MAX_PLAYERS, MAX_TABLES_AS_GM, newJoinCode, normalizeJoinCode,
   tableFor, unlinkCharactersOf,
@@ -228,16 +229,24 @@ export function tableRoutes(db, { hub, joinLimits = { windowMs: 15 * 60 * 1000, 
     // Só fichas da própria conta (nem o admin escolhe ficha de outra pessoa aqui).
     const character = await db.get('SELECT * FROM characters WHERE id = ? AND user_id = ?', characterId, req.user.id);
     if (!character) throw new HttpError(404, 'Personagem não encontrado.');
-    await db.tx(async (t) => {
+    const previous = await db.tx(async (t) => {
       const current = await t.get(
-        `SELECT cc.character_id FROM campaign_characters cc JOIN characters ch ON ch.id = cc.character_id
+        `SELECT cc.character_id, cc.status, ch.name FROM campaign_characters cc JOIN characters ch ON ch.id = cc.character_id
          WHERE cc.campaign_id = ? AND ch.user_id = ?`,
         table.id, req.user.id,
       );
-      if (current?.character_id === character.id) return;
+      if (current?.character_id === character.id) return false;
       await unlinkCharactersOf(t, table.id, req.user.id);
       await linkCharacter(t, table.id, character);
+      return current ?? null;
     });
+    // Troca de ficha: a mesa fica sabendo (e, se for o caso, que o anterior morreu).
+    if (previous) {
+      const who = `${character.name} (${character.race}, ${character.class} ${character.level})`;
+      const text = previous.status === 'dead' ? `${previous.name} morreu. ${req.user.name} continua a aventura com ${who}.`
+        : `${req.user.name} trocou de ficha: sai ${previous.name}, entra ${who}.`;
+      await postTableMessage(db, hub, table.id, { sender_type: 'system', sender_name: 'Mesa', kind: 'sistema', user_id: req.user.id, character_id: character.id, text });
+    }
     changed(table.id);
     res.json(await tableView(db, req.user, table.id));
   });

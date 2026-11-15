@@ -144,6 +144,13 @@ Na aba **Mesas**, uma pessoa cria a mesa e vira o Mestre. Não usa IA nem chave 
 
 Em **Campanhas → Nova campanha**, o jogador escolhe um tema, o tom e a duração, e pode escrever uma ideia. A IA devolve um rascunho com o nome, o mundo (premissa, locais, facções e como a aventura começa) e as instruções para o Mestre. Nada é salvo até o jogador revisar e clicar em **Criar campanha**. Também dá para escrever do zero. Os temas ficam em `src/services/campaignGenerator.js`.
 
+## Quando um personagem morre
+
+A morte vale para aquela campanha ou mesa; a mesma ficha continua livre para outras histórias. Em **Personagens**, o cartão mostra "Morreu em: ...".
+
+- **Mestre IA:** com o personagem morto, o chat fica bloqueado e o painel mostra **"Fulano morreu"** com as saídas: jogar com outro personagem que já está no grupo, **entrar na aventura** com outra ficha ou **criar um personagem novo**. Ao entrar, o Mestre IA recebe o aviso "Novo personagem no grupo" e apresenta o personagem na cena seguinte. Se a história trouxer o morto de volta (ex.: Revivificar), o Estado se ajusta em "Ajustar estado na campanha".
+- **Mesas com amigos:** quem decide é o Mestre, no cartão do jogador: **Marcar como morto** (a mesa toda vê "Fulano morreu.") ou **Trazer de volta (1 PV)**. Três falhas na salvaguarda contra a morte também matam. O jogador vê **"Fulano morreu"** com **Escolher outra ficha** e **Criar ficha nova**; a ficha morta não rola mais testes (dados livres continuam). Ao trocar, a mesa vê "Fulano morreu. Ana continua a aventura com ...".
+
 ## Importar ficha em PDF
 
 Em **Personagens**, **Importar PDF** lê uma ficha e abre o formulário já preenchido; o jogador confere as 3 páginas e clica em **Criar personagem** (nada é salvo antes disso).

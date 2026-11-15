@@ -103,6 +103,23 @@ export function campaignRoutes(db) {
 
     const result = await linkCharacter(db, campaignId, character);
     if (result.changes === 0) throw new HttpError(409, 'Este personagem já está nesta campanha.');
+    // Campanha em andamento: o Mestre IA lê este aviso e apresenta o personagem na próxima cena.
+    const started = await db.get('SELECT 1 AS x FROM messages WHERE campaign_id = ? LIMIT 1', campaignId);
+    if (started) {
+      const fallen = await db.all(
+        `SELECT ch.name FROM campaign_characters cc JOIN characters ch ON ch.id = cc.character_id
+         WHERE cc.campaign_id = ? AND cc.status = 'dead' AND ch.user_id = ?`,
+        campaignId, req.user.id,
+      );
+      const after = fallen.length ? ` depois da morte de ${fallen.map((row) => row.name).join(' e ')}` : '';
+      await db.run(
+        `INSERT INTO messages (campaign_id, sender_type, sender_name, message_text, user_id, character_id, kind)
+         VALUES (?, 'system', 'Grupo', ?, ?, ?, 'sistema')`,
+        campaignId,
+        `Novo personagem no grupo${after}: ${character.name} (${character.race}, ${character.class} ${character.level}).`,
+        req.user.id, character.id,
+      );
+    }
 
     res.status(201).json({ party: publicParty(await getParty(db, campaignId)) });
   });

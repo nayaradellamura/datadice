@@ -43,7 +43,16 @@ export function characterRoutes(db, { onChanged = async () => {} } = {}) {
     const rows = req.user.role === 'admin'
       ? await db.all('SELECT * FROM characters ORDER BY id DESC')
       : await db.all('SELECT * FROM characters WHERE user_id = ? ORDER BY id DESC', req.user.id);
-    res.json(rows.map(publicCharacter));
+    // Onde cada ficha morreu (a mesma ficha continua livre para outras campanhas e mesas).
+    const deaths = await db.all(
+      `SELECT cc.character_id, c.name FROM campaign_characters cc JOIN campaigns c ON c.id = cc.campaign_id
+       WHERE cc.status = 'dead' AND cc.character_id = ANY(?::int[])`,
+      rows.map((row) => row.id),
+    );
+    res.json(rows.map((row) => ({
+      ...publicCharacter(row),
+      fallen_in: deaths.filter((death) => death.character_id === row.id).map((death) => death.name),
+    })));
   });
 
   router.get('/:id', async (req, res) => {

@@ -1172,3 +1172,12 @@ input, select { min-height: 2.25rem; }
 .settings-tabs { margin: .8rem 1rem 0; }
 #settings-pane-usage .stat-grid { grid-template-columns: repeat(auto-fit, minmax(6.5rem, 1fr)); }
 #settings-pane-usage .quota-number { font-size: 1.5rem; line-height: 1.2; }
+
+/* Personagem morto: o cartão de "e agora?" e o visual apagado de quem caiu. */
+.fallen-card { border-color: var(--danger); }
+.fallen-card h3 { color: var(--danger); }
+.fallen-actions { display: flex; flex-wrap: wrap; gap: .5rem; align-items: end; }
+.fallen-actions label { flex: 1 1 12rem; }
+.is-dead .member-head img, .tp-pc.is-dead .member-head img { filter: grayscale(1); opacity: .7; }
+.tp-pc.is-dead { border-color: var(--danger); }
+.card-fallen { color: var(--danger); font-size: .8rem; }

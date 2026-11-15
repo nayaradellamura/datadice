@@ -166,25 +166,27 @@ function libraryRow(kind, row, gm) {
   return gm ? { ...base, stats: JSON.parse(row.stats_json || '{}') } : base;
 }
 
+/** Grava uma mensagem na mesa e manda ao vivo para quem pode ver. Também usada ao trocar de ficha. */
+export async function postTableMessage(db, hub, tableId, fields) {
+  const { id } = await db.run(
+    `INSERT INTO messages (campaign_id, sender_type, sender_name, message_text, user_id, character_id, kind, visibility, recipient_user_id, image_id)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
+    tableId, fields.sender_type, fields.sender_name, fields.text ?? '', fields.user_id ?? null, fields.character_id ?? null,
+    fields.kind, fields.visibility ?? 'all', fields.recipient_user_id ?? null, fields.image_id ?? null,
+  );
+  const message = await db.get(`${MESSAGE_SELECT} WHERE m.id = ?`, id);
+  hub?.publish(tableId, 'message', message, (sub) => canSee(message, sub));
+  return message;
+}
+
 export function tablePlayRoutes(db, hub) {
   const router = Router();
   // Por conta: várias pessoas jogando na mesma casa dividem o mesmo IP.
   const chatLimiter = rateLimit({ windowMs: 30 * 1000, max: 40, key: (req) => `u${req.user.id}`, message: 'Muitas mensagens seguidas. Respire e tente de novo em alguns segundos.' });
   const uploadLimiter = rateLimit({ windowMs: 60 * 1000, max: 15, key: (req) => `u${req.user.id}`, message: 'Muitos envios seguidos. Aguarde um minuto.' });
 
-  const messageById = (id) => db.get(`${MESSAGE_SELECT} WHERE m.id = ?`, id);
 
-  async function postMessage(table, fields) {
-    const { id } = await db.run(
-      `INSERT INTO messages (campaign_id, sender_type, sender_name, message_text, user_id, character_id, kind, visibility, recipient_user_id, image_id)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
-      table.id, fields.sender_type, fields.sender_name, fields.text ?? '', fields.user_id ?? null, fields.character_id ?? null,
-      fields.kind, fields.visibility ?? 'all', fields.recipient_user_id ?? null, fields.image_id ?? null,
-    );
-    const message = await messageById(id);
-    hub.publish(table.id, 'message', message, (sub) => canSee(message, sub));
-    return message;
-  }
+  const postMessage = (table, fields) => postTableMessage(db, hub, table.id, fields);
 
   const gmUserId = async (tableId) =>
     (await db.get(`SELECT user_id FROM campaign_members WHERE campaign_id = ? AND role = 'mestre'`, tableId)).user_id;
@@ -299,9 +301,15 @@ export function tablePlayRoutes(db, hub) {
         throw new HttpError(400, 'Tipo de rolagem inválido.');
       }
     } else {
-      const row = await myCharacter(table, req.user);
+      const mine = await myCharacter(table, req.user);
+      // Personagem morto não rola pela ficha; dados livres continuam, em nome do jogador.
+      const row = mine?.status === 'dead' ? null : mine;
       if (!row) {
-        if (body.kind !== 'dice') throw new HttpError(400, 'Escolha sua ficha na aba Mesa para rolar testes e ataques.');
+        if (body.kind !== 'dice') {
+          throw new HttpError(400, mine
+            ? `${mine.name} morreu. Para continuar jogando, escolha outra ficha na aba Grupo.`
+            : 'Escolha sua ficha na aba Mesa para rolar testes e ataques.', mine ? 'character_dead' : undefined);
+        }
         text = rollDiceExpression({ name: req.user.name }, body.expression);
       } else {
         const member = publicPartyMember(row);
@@ -389,6 +397,8 @@ export function tablePlayRoutes(db, hub) {
     const { row, next } = await db.tx(async (t) => {
       const current = await partyRow(table, req.user, req.params.characterId, { conn: t, lock: true });
       const body = { ...(req.body ?? {}) };
+      // Morrer ou voltar à vida é decisão do Mestre.
+      if (body.status !== undefined && table.my_role !== 'mestre') throw new HttpError(403, 'Só o Mestre muda o estado (morto, estável...) do personagem.');
       if (body.hp_delta !== undefined) {
         const delta = int(body.hp_delta, 'O dano ou a cura', -9999, 9999, 0);
         if (delta < 0) {
@@ -405,7 +415,16 @@ export function tablePlayRoutes(db, hub) {
       return { row: current, next: updated };
     });
     const changes = describeStateChange(row, next);
-    if (changes.length && table.my_role === 'mestre' && row.owner_id !== req.user.id) {
+    // Morte e volta à vida: a mesa inteira fica sabendo (e o aviso particular fica de fora, para não repetir).
+    const lifeChanged = (row.status === 'dead') !== (next.status === 'dead');
+    if (row.status !== 'dead' && next.status === 'dead') {
+      await postMessage(table, { sender_type: 'system', sender_name: 'Mesa', kind: 'sistema', user_id: req.user.id, character_id: row.character_id, text: `${row.character_name} morreu.` });
+    } else if (row.status === 'dead' && next.status !== 'dead') {
+      await postMessage(table, { sender_type: 'system', sender_name: 'Mesa', kind: 'sistema', user_id: req.user.id, character_id: row.character_id, text: `${row.character_name} voltou à vida.` });
+    }
+    if (lifeChanged) {
+      // Já anunciado acima.
+    } else if (changes.length && table.my_role === 'mestre' && row.owner_id !== req.user.id) {
       // O jogador fica sabendo quando o Mestre mexe no personagem dele.
       await postMessage(table, {
         sender_type: 'system', sender_name: 'Mestre', kind: 'sistema', user_id: req.user.id,

@@ -122,6 +122,8 @@ REGRAS ESSENCIAIS DA 5E:
 - Ataque: d20 + bônus contra a CA do alvo. Um 20 natural sempre acerta e dobra os dados de dano; um 1 natural sempre erra.
 - Combate: comece com iniciativa. Cada turno tem movimento, uma ação e, se houver, uma ação bônus; cada rodada dá uma reação. Uma rodada dura 6 segundos.
 - 0 PV: o personagem fica inconsciente e faz salvaguardas contra a morte. Sofrer dano nesse estado causa falhas.
+- Personagem do jogador com estado "dead" está morto: não age nem fala, e só volta à vida por magia ou acontecimento dentro da história. A morte é definitiva salvo isso; trate-a com peso e respeito.
+- "[Sistema] Novo personagem no grupo": apresente esse personagem na próxima cena, de um jeito que faça sentido na história (um viajante que cruza o caminho, alguém resgatado, um aliado enviado...). A partir daí, ele é quem o jogador controla.
 - Magias: consomem espaços do círculo correspondente, exceto truques. Concentração se rompe por dano (salvaguarda de CON, CD 10 ou metade do dano, o que for maior) ou ao conjurar outra magia de concentração.
 - Descansos: o curto permite gastar Dados de Vida; o longo restaura PV, metade dos Dados de Vida e os espaços de magia.
 - Use os termos da ficha ao falar com o jogador: CA, CD, PV, NPC, salvaguarda, Lidar com Animais. Os livros chamam salvaguarda de "teste de resistência" e Lidar com Animais de "Adestrar Animais"; são a mesma coisa.
