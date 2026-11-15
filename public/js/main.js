@@ -97,7 +97,7 @@ async function renderHome() {
   };
   count('home-ia-count', mine.length, 'campanha', 'campanhas');
   count('home-mesa-count', tables.length, 'mesa', 'mesas');
-  document.getElementById('home-ia-status').textContent = 'Precisa de uma chave de IA. A do Gemini é grátis.';
+  document.getElementById('home-ia-status').textContent = 'Precisa de uma chave de IA. Cadastre a sua: recomendamos a do Gemini, que tem um limite grátis por dia.';
   document.getElementById('home-ia-go').textContent = mine.length ? 'Continuar' : 'Jogar';
   document.getElementById('home-mesa-go').hidden = !tables.length;
 }
@@ -304,7 +304,7 @@ initUsage();
 // Início: toque no logo ou nos botões dos cartões.
 document.querySelector('header h1').addEventListener('click', () => showView('home').catch(viewFailed));
 document.getElementById('home-ia-go').addEventListener('click', () => showView('game').catch(viewFailed));
-document.getElementById('home-ia-key').addEventListener('click', () => document.dispatchEvent(new CustomEvent('open-settings')));
+document.getElementById('home-ia-key').addEventListener('click', () => document.dispatchEvent(new CustomEvent('open-settings', { detail: { section: 'ai' } })));
 // Colou a chave nas Configurações e fechou: o cartão do Mestre IA já mostra "Jogar".
 document.getElementById('settings-dialog').addEventListener('close', () => {
   if (!document.getElementById('view-home').hidden) renderHomeKey();

@@ -1294,3 +1294,11 @@ body[data-mode="home"] .topbar nav, body[data-mode="home"] #mode-switch { displa
 .home-actions button { flex: 1 1 auto; }
 .home-actions .primary { flex-basis: 100%; }
 @media (prefers-reduced-motion: reduce) { .home-card, .home-card:hover { transition: none; transform: none; } }
+
+/* Configurações em acordeões (IA, Imagens, Narração), fechados ao abrir. */
+#settings-pane-key { display: flex; flex-direction: column; gap: .6rem; padding: 1rem; }
+#settings-pane-key[hidden] { display: none; }
+.settings-acc > summary { color: var(--text); }
+.settings-acc[open] > summary { color: var(--accent); }
+.settings-acc > summary .summary-note { text-align: right; }
+.settings-acc .accordion-body { gap: .55rem; }

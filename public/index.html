@@ -119,16 +119,16 @@
       <button type="button" role="tab" id="settings-tab-usage" data-tab="usage" aria-controls="settings-pane-usage">Consumo IA</button>
     </div>
     <div id="settings-pane-key" role="tabpanel" aria-labelledby="settings-tab-key">
-    <section class="settings-section">
-      <h3>IA do Mestre</h3>
-      <p class="muted small-print">Quem narra e responde no Mestre IA. Mesas com amigos não usam IA.</p>
-      <div class="provider-grid" role="radiogroup" aria-label="IA do Mestre">
-        <button type="button" role="radio" class="provider-option" data-provider="gemini"><strong>Gemini</strong><small>Grátis</small></button>
-        <button type="button" role="radio" class="provider-option" data-provider="openai"><strong>ChatGPT</strong><small>Pago</small></button>
-        <button type="button" role="radio" class="provider-option" data-provider="anthropic"><strong>Claude</strong><small>Pago</small></button>
-        <button type="button" role="radio" class="provider-option" data-provider="openrouter"><strong>OpenRouter</strong><small>Vários, alguns grátis</small></button>
-      </div>
-      <p id="ai-note" class="muted small-print"></p>
+    <details class="accordion settings-acc" id="acc-ai">
+      <summary>IA do Mestre <span class="summary-note" id="acc-ai-note"></span></summary>
+      <div class="accordion-body">
+      <label for="ai-provider">IA</label>
+      <select id="ai-provider">
+        <option value="gemini">Gemini (grátis, recomendado)</option>
+        <option value="openai">ChatGPT (pago)</option>
+        <option value="anthropic">Claude (pago)</option>
+        <option value="openrouter">OpenRouter (vários, alguns grátis)</option>
+      </select>
       <label for="ai-key" id="ai-key-label">Chave do Gemini</label>
       <div class="password-field">
         <input id="ai-key" type="password" autocomplete="off" spellcheck="false" placeholder="Cole aqui sua chave">
@@ -153,9 +153,11 @@
         <summary>Saiba mais</summary>
         <ul id="ai-more"></ul>
       </details>
-    </section>
-    <section class="settings-section">
-      <h3>Imagens</h3>
+      </div>
+    </details>
+    <details class="accordion settings-acc" id="acc-img">
+      <summary>Imagens <span class="summary-note" id="acc-img-note"></span></summary>
+      <div class="accordion-body">
       <label class="switch">
         <input id="settings-images" type="checkbox" role="switch">
         <span class="switch-track" aria-hidden="true"></span>
@@ -178,11 +180,12 @@
         </div>
         <p id="img-note" class="muted small-print"></p>
       </div>
-      <p id="img-off-note" class="muted small-print">Desligado, o Mestre narra só em texto e a chave gasta menos.</p>
-    </section>
-    <section class="settings-section" id="narration-section">
-      <h3>Narração em voz</h3>
-      <p class="muted small-print">Toque em "Ouvir" nas falas do Mestre. Usa a voz do seu aparelho: grátis e sem chave.</p>
+      <span id="img-off-note" hidden></span>
+      </div>
+    </details>
+    <details class="accordion settings-acc" id="acc-narration">
+      <summary>Narração em voz <span class="summary-note" id="acc-narration-note"></span></summary>
+      <div class="accordion-body">
       <label class="switch">
         <input id="narration-auto" type="checkbox" role="switch">
         <span class="switch-track" aria-hidden="true"></span>
@@ -201,7 +204,8 @@
       </div>
       <button type="button" id="narration-test">Ouvir exemplo</button>
       <p id="narration-note" class="muted small-print" hidden></p>
-    </section>
+      </div>
+    </details>
     </div>
     <div id="settings-pane-usage" class="settings-section" role="tabpanel" aria-labelledby="settings-tab-usage" hidden>
       <p class="muted small-print">Quanto a sua chave de IA gastou no DataDice.</p>

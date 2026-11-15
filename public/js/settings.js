@@ -80,6 +80,7 @@ function fillModels(provider, loaded = null) {
 /** Imagens: Gemini ou OpenAI. Pede a chave só se ela ainda não está em "IA do Mestre". */
 function renderImages() {
   const on = el('settings-images').checked;
+  if (el('acc-img-note')) renderNotes();
   const image = settings.imageProvider;
   el('img-options').hidden = !on;
   el('img-off-note').hidden = on;
@@ -94,33 +95,34 @@ function renderImages() {
   el('img-key-label').textContent = `Chave ${whose} (para as imagens)`;
   const keyInput = el('img-key');
   if (document.activeElement !== keyInput) keyInput.value = keyOf(image);
-  let note = image === 'openai'
-    ? 'Cada imagem é cobrada na sua conta da OpenAI.'
-    : 'Precisa de faturamento ativo na chave do Gemini (o plano grátis não inclui imagens): cerca de US$ 0,03 por imagem.';
-  if (sameKey) note += ' Usa a mesma chave de cima.';
-  else if (!keyOf(image)) note += ` Sem a chave ${whose}, o jogo segue só em texto.`;
-  el('img-note').textContent = note;
+  // Uma linha só: quanto custa.
+  el('img-note').textContent = image === 'openai'
+    ? 'Cobrado por imagem na sua conta da OpenAI.'
+    : 'Precisa de faturamento ativo no Gemini (cerca de US$ 0,03 por imagem).';
 }
 
-/** Mostra a IA escolhida: chave, modelo (quando há), link e explicações. */
+/** Mostra a IA escolhida: chave, modelo (quando há), link e explicações (no "Saiba mais"). */
 function render() {
   const provider = settings.provider;
   const info = PROVIDERS[provider];
-  for (const button of document.querySelectorAll('.provider-option')) {
-    const active = button.dataset.provider === provider;
-    button.classList.toggle('active', active);
-    button.setAttribute('aria-checked', String(active));
-  }
-  el('ai-note').textContent = info.note;
+  el('ai-provider').value = provider;
   el('ai-key-label').textContent = `Chave do ${info.name}`;
   el('ai-key').value = keyOf(provider);
   el('ai-model-field').hidden = provider === 'gemini';
   if (provider !== 'gemini') fillModels(provider);
   el('ai-link').href = info.link;
-  el('ai-link').textContent = `Obter chave no ${info.site} ↗`;
-  el('ai-more').replaceChildren(...[...info.more, 'A chave fica salva só neste navegador. O servidor não a guarda.'].map((text) => h('li', {}, text)));
+  el('ai-link').textContent = `Obter chave ↗`;
+  el('ai-more').replaceChildren(...[info.note, ...info.more, 'A chave fica salva só neste navegador. O servidor não a guarda.'].map((text) => h('li', {}, text)));
   setStatus('', '');
   renderImages();
+  renderNotes();
+}
+
+/** O que aparece ao lado do título de cada acordeão (fechado, dá para ver como está sem abrir). */
+function renderNotes() {
+  el('acc-ai-note').textContent = `${PROVIDERS[settings.provider].name.replace(/ \(.*\)$/, '')} · ${keyOf(settings.provider) ? 'chave colocada' : 'falta a chave'}`;
+  el('acc-img-note').textContent = settings.imagesEnabled ? (settings.imageProvider === 'openai' ? 'OpenAI' : 'Gemini') : 'Desligado';
+  el('acc-narration-note').textContent = !narrationSupported ? 'Indisponível' : narration.auto ? 'Automática' : 'Só no "Ouvir"';
 }
 
 async function loadModels() {
@@ -175,16 +177,20 @@ function showTab(tab) {
   if (tab === 'usage') renderUsage();
 }
 
-export function openSettings({ reason, tab = 'key' } = {}) {
+/** section: 'ai' abre já no acordeão da IA (ex.: botão "Colocar a chave" do Início). */
+export function openSettings({ reason, tab = 'key', section = null } = {}) {
   const dialog = el('settings-dialog');
   // Um aviso (ex.: falta a chave) sempre abre na aba da chave.
-  showTab(reason ? 'key' : tab);
+  showTab(reason || section ? 'key' : tab);
   el('settings-images').checked = settings.imagesEnabled;
   render();
   renderNarration();
+  // Todos começam fechados; um aviso (ex.: falta a chave) abre o da IA.
+  const openAi = Boolean(reason) || section === 'ai';
+  for (const acc of document.querySelectorAll('.settings-acc')) acc.open = openAi && acc.id === 'acc-ai';
   if (reason) setStatus('warn', reason);
   if (!dialog.open) dialog.showModal();
-  if (!settings.textKey) el('ai-key').focus();
+  if (openAi && !settings.textKey) el('ai-key').focus();
 }
 
 export function initSettings() {
@@ -192,23 +198,22 @@ export function initSettings() {
   for (const button of document.querySelectorAll('.settings-tabs button')) {
     button.addEventListener('click', () => showTab(button.dataset.tab));
   }
-  document.addEventListener('open-settings', () => openSettings());
+  document.addEventListener('open-settings', (event) => openSettings({ section: event.detail?.section ?? null }));
   document.addEventListener('need-gemini-key', () =>
     openSettings({ reason: settings.textKey ? 'Confira a chave e o modelo da IA.' : `Cole sua chave do ${settings.providerLabel} para jogar.` }));
 
   // IA do Mestre.
-  for (const button of document.querySelectorAll('.provider-option')) {
-    button.addEventListener('click', () => {
-      settings.provider = button.dataset.provider;
-      render();
-    });
-  }
+  el('ai-provider').addEventListener('change', (event) => {
+    settings.provider = event.target.value;
+    render();
+  });
   const keyInput = el('ai-key');
   // A chave é salva assim que é digitada; o teste confirma se a empresa aceita.
   keyInput.addEventListener('input', () => {
     setKeyOf(settings.provider, keyInput.value);
     setStatus('', '');
     renderImages();
+    renderNotes();
   });
   const showKey = bindEyeToggle(el('ai-key-toggle'), keyInput, 'chave');
   el('ai-model').addEventListener('change', (event) => settings.setModel(settings.provider, event.target.value));
@@ -258,7 +263,10 @@ export function initSettings() {
   });
 
   // Narração.
-  el('narration-auto').addEventListener('change', (event) => { narration.auto = event.target.checked; });
+  el('narration-auto').addEventListener('change', (event) => {
+    narration.auto = event.target.checked;
+    renderNotes();
+  });
   el('narration-voice').addEventListener('change', (event) => { narration.voice = event.target.value; });
   el('narration-rate').addEventListener('change', (event) => { narration.rate = Number(event.target.value); });
   el('narration-test').addEventListener('click', () =>
