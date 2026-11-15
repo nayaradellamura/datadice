@@ -91,12 +91,13 @@ export const TOURS = [
     title: 'Primeiros passos',
     blurb: 'Os dois jeitos de jogar e onde fica cada coisa.',
     steps: [
-      { title: 'Bem-vinda ao DataDice!', text: 'Aqui você joga RPG (D&D 5e) de dois jeitos: sozinha, com um Mestre feito por inteligência artificial, ou com amigos, numa mesa em que uma pessoa é o Mestre. Vamos ver onde fica cada coisa.' },
-      { prepare: () => ctx.showView('home'), target: () => firstVisible('.home-modes'), title: 'Início', text: 'Toda vez que você entra, começa aqui. Escolha Mestre IA (a IA narra) ou Mesas com amigos (um amigo é o Mestre). Para voltar, toque no logo.' },
-      { prepare: () => ctx.showView('game'), target: () => el('mode-switch'), title: 'Trocar de jeito', text: 'Dentro do jogo, este seletor troca entre Mestre IA (laranja) e Mesas com amigos (azul-petróleo), e o menu logo abaixo mostra as partes de cada um.' },
-      { target: () => firstVisible('.tab[data-view="characters"]'), title: 'Personagens servem para os dois', text: 'A mesma ficha vale no Mestre IA e nas mesas. Um personagem pode estar em várias campanhas e mesas ao mesmo tempo.' },
-      { target: () => el('settings-open'), title: 'Configurações', text: 'Aqui ficam a chave de IA (só para o Mestre IA), as imagens, a narração em voz e o Consumo IA. A chave fica salva só neste navegador. Nas mesas com amigos não precisa de chave. O treinamento "Chave de IA" mostra como pegar a sua.' },
-      { target: () => el('tours-open'), title: 'Treinamentos', text: 'Sempre que quiser rever algo, toque aqui. Há treinamentos curtos para cada parte do sistema.' },
+      // Fica todo no Início: apresenta os dois jeitos sem entrar em nenhum.
+      { prepare: () => ctx.showView('home'), title: 'Boas-vindas ao DataDice!', text: 'Aqui você joga RPG (D&D 5e) de dois jeitos. Vamos ver cada um, sem sair desta tela.' },
+      { target: () => firstVisible('.home-card.mode-ia'), title: 'Mestre IA', text: 'A inteligência artificial é o Mestre: narra a história e reage ao que você faz. Você joga sozinho, quando quiser. Precisa de uma chave de IA.' },
+      { target: () => firstVisible('.home-card.mode-mesa'), title: 'Mesas com amigos', text: 'Uma pessoa é o Mestre e os outros jogam, cada um no seu celular. Sem IA e sem chave. Crie uma mesa ou entre com o código que o Mestre mandar.' },
+      { title: 'Personagens servem para os dois', text: 'A mesma ficha vale no Mestre IA e nas mesas. Depois de escolher um jeito de jogar, o menu mostra a aba Personagens, e a troca entre os dois fica no topo.' },
+      { target: () => el('settings-open'), title: 'Configurações', text: 'Aqui ficam a chave de IA (só para o Mestre IA), as imagens, a narração em voz e o Consumo IA. O treinamento "Chave de IA" mostra como pegar a sua.' },
+      { target: () => el('tours-open'), title: 'Treinamentos', text: 'Sempre que quiser rever algo, toque aqui. Para voltar ao Início de qualquer lugar, toque no logo.' },
     ],
   },
   {
