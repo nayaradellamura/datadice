@@ -1249,3 +1249,44 @@ input, select { min-height: 2.25rem; }
 .provider-option.active strong { color: var(--accent); }
 .img-provider { margin-bottom: 0; }
 #img-options[hidden], #img-off-note[hidden] { display: none; }
+
+/* Cores dos dois jeitos de jogar: laranja = Mestre IA, azul-petróleo = Mesas com amigos.
+   No modo Mesas, a cor de destaque de toda a tela muda, para ficar claro onde se está. */
+:root { --ia: #f26b3a; --ia-ink: #1c0b04; --mesa: #35b8aa; --mesa-ink: #03201d; }
+body[data-mode="mesa"] { --accent: var(--mesa); --accent-ink: var(--mesa-ink); }
+header h1 { cursor: pointer; }
+.topbar h1 strong span { color: var(--ia); }
+
+/* Seletor do topo: nome + subtítulo, ícone na cor do modo. */
+.mode-switch-top button { text-align: left; line-height: 1.15; padding: .4rem .9rem; }
+.mode-text { display: flex; flex-direction: column; }
+.mode-name { display: inline-flex; align-items: center; gap: .3rem; }
+.mode-sub { font-size: .72rem; font-weight: 500; opacity: .8; }
+.mode-switch-top button[data-mode="ia"] svg { color: var(--ia); }
+.mode-switch-top button[data-mode="mesa"] svg { color: var(--mesa); }
+.mode-switch-top button[data-mode="ia"].active { background: var(--ia); color: var(--ia-ink); }
+.mode-switch-top button[data-mode="mesa"].active { background: var(--mesa); color: var(--mesa-ink); }
+.mode-switch-top button.active svg { color: currentColor; }
+@media (max-width: 700px) {
+  .mode-switch-top button { justify-content: flex-start; padding: .45rem .6rem; }
+  .mode-switch-top button svg { flex: none; }
+}
+
+/* Início: os dois cartões. */
+.home { display: flex; flex-direction: column; gap: 1rem; }
+.home-head p { margin: .25rem 0 0; }
+.home-modes { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 1rem; }
+.home-card { display: flex; flex-direction: column; gap: .7rem; padding: 1.1rem; background: var(--panel); border: 1px solid var(--line); border-top: 5px solid var(--card-color); border-radius: 14px; }
+.home-card.mode-ia { --card-color: var(--ia); --accent: var(--ia); --accent-ink: var(--ia-ink); }
+.home-card.mode-mesa { --card-color: var(--mesa); --accent: var(--mesa); --accent-ink: var(--mesa-ink); }
+.home-card p { margin: 0; }
+.home-card-head { display: flex; gap: .8rem; align-items: center; }
+.home-card-head h3 { font-size: 1.35rem; color: var(--card-color); }
+.home-icon { flex: none; color: var(--card-color); padding: .45rem; border-radius: 12px; background: var(--panel-2); width: 52px; height: 52px; }
+.home-tag { color: var(--muted); font-size: .9rem; }
+.home-facts { margin: 0; padding-left: 1.1rem; color: var(--muted); font-size: .92rem; display: grid; gap: .2rem; }
+.home-status { font-size: .9rem; padding: .5rem .7rem; border-radius: 8px; background: var(--input); border: 1px solid var(--line); }
+.home-actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: auto; }
+.home-actions button { flex: 1 1 auto; }
+.home-actions .primary { flex-basis: 100%; }
+.home-tip { text-align: center; }

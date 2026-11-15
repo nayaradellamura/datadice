@@ -92,7 +92,8 @@ export const TOURS = [
     blurb: 'Os dois jeitos de jogar e onde fica cada coisa.',
     steps: [
       { title: 'Bem-vinda ao DataDice!', text: 'Aqui você joga RPG (D&D 5e) de dois jeitos: sozinha, com um Mestre feito por inteligência artificial, ou com amigos, numa mesa em que uma pessoa é o Mestre. Vamos ver onde fica cada coisa.' },
-      { target: () => el('mode-switch'), title: 'Dois jeitos de jogar', text: 'Mestre IA: a IA narra a história para você. Mesas com amigos: um Mestre de verdade conduz, sem IA. Cada um tem o seu próprio menu logo abaixo.' },
+      { prepare: () => ctx.showView('home'), target: () => firstVisible('.home-modes'), title: 'Início', text: 'Toda vez que você entra, começa aqui. Escolha Mestre IA (a IA narra) ou Mesas com amigos (um amigo é o Mestre). Para voltar, toque em Início ou no logo.' },
+      { target: () => el('mode-switch'), title: 'Dois jeitos de jogar', text: 'Mestre IA: a IA narra a história para você. Mesas com amigos: um Mestre de verdade conduz, sem IA. Cada um tem a sua cor (laranja e azul-petróleo) e o seu próprio menu logo abaixo.' },
       { target: () => firstVisible('.tab[data-view="characters"]'), title: 'Personagens servem para os dois', text: 'A mesma ficha vale no Mestre IA e nas mesas. Um personagem pode estar em várias campanhas e mesas ao mesmo tempo.' },
       { target: () => el('settings-open'), title: 'Configurações', text: 'A chave do Gemini (só para o Mestre IA), a opção de gerar ilustrações e o Consumo IA (quanto a chave gastou e quanto sobra hoje). A chave fica salva só neste navegador. Para jogar nas mesas com amigos não precisa de chave. O treinamento "Chave do Gemini" mostra como pegar a sua, de graça.' },
       { target: () => el('tours-open'), title: 'Treinamentos', text: 'Sempre que quiser rever algo, toque aqui. Há treinamentos curtos para cada parte do sistema.' },

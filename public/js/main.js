@@ -1,4 +1,4 @@
-import { api, store } from './api.js';
+import { api, settings, store } from './api.js';
 import { initAdmin, refreshAdminBadge, renderAdmin, renderMetrics } from './admin.js';
 import { initCampaigns, renderCampaigns } from './campaign.js';
 import { initCharacterForm, openCharacter, openForeignCharacter, refreshRoster } from './character.js';
@@ -13,7 +13,7 @@ import { initTours } from './tour.js';
 import { initSettings } from './settings.js';
 import { initUsage } from './usage.js';
 
-const PLAYER_VIEWS = ['game', 'characters', 'campaigns', 'tables', 'templates', 'library'];
+const PLAYER_VIEWS = ['home', 'game', 'characters', 'campaigns', 'tables', 'templates', 'library'];
 const ADMIN_VIEWS = ['notebook', 'metrics', 'admin'];
 
 initErrorReport();
@@ -60,8 +60,47 @@ function applyMode(next) {
   }
 }
 
+/**
+ * Início: a tela de escolha entre Mestre IA e Mesas com amigos, que abre toda vez que a pessoa entra.
+ * Nela nenhum dos dois fica marcado no topo e o menu mostra só o que vale para os dois.
+ */
+function enterHome() {
+  document.body.dataset.mode = 'home';
+  for (const tab of document.querySelectorAll('.tab[data-mode]')) tab.hidden = true;
+  for (const button of document.querySelectorAll('#mode-switch button')) {
+    button.classList.remove('active');
+    button.setAttribute('aria-pressed', 'false');
+  }
+}
+
+async function renderHome() {
+  const hasKey = Boolean(settings.textKey);
+  document.getElementById('home-ia-key').hidden = hasKey;
+  const [campaigns, tables] = await Promise.all([
+    api('/campaigns').catch(() => []),
+    api('/tables').catch(() => []),
+  ]);
+  const mine = campaigns.filter((campaign) => campaign.user_id === undefined || campaign.user_id === user.id);
+  const iaStatus = document.getElementById('home-ia-status');
+  iaStatus.hidden = false;
+  iaStatus.textContent = [
+    mine.length ? `Você tem ${mine.length} ${mine.length === 1 ? 'campanha' : 'campanhas'}.` : 'Nenhuma campanha ainda: comece criando uma.',
+    hasKey ? `Chave do ${settings.providerLabel} configurada.` : 'Falta colocar a chave de IA.',
+  ].join(' ');
+  document.getElementById('home-ia-go').textContent = mine.length ? 'Continuar no Mestre IA' : 'Jogar com o Mestre IA';
+  const mesaStatus = document.getElementById('home-mesa-status');
+  mesaStatus.hidden = false;
+  mesaStatus.textContent = tables.length
+    ? `Você está em ${tables.length} ${tables.length === 1 ? 'mesa' : 'mesas'}.`
+    : 'Nenhuma mesa ainda: crie uma e chame os amigos, ou entre com o código que o Mestre mandou.';
+  document.getElementById('home-mesa-go').hidden = !tables.length;
+}
+
 async function showView(view) {
   if (VIEW_MODES[view] && VIEW_MODES[view] !== mode) applyMode(VIEW_MODES[view]);
+  if (view === 'home') enterHome();
+  // Saindo do Início para uma tela dos dois modos (ex.: Personagens): o topo volta ao último modo usado.
+  else if (!VIEW_MODES[view] && document.body.dataset.mode === 'home') applyMode(mode);
   for (const name of VIEWS) document.getElementById(`view-${name}`).hidden = name !== view;
   // Nas telas de administração, quem fica marcada é a aba "Admin".
   const adminButton = document.getElementById('admin-menu-button');
@@ -84,6 +123,7 @@ async function showView(view) {
   // Saiu da mesa para criar uma ficha e foi para outro lugar: esquece a volta.
   if (view !== 'characters' && view !== 'tables') store.set('tables.return', '');
   updateTableReturn();
+  if (view === 'home') await renderHome();
   if (view === 'characters') await refreshRoster();
   if (view === 'campaigns') await renderCampaigns();
   if (view === 'tables') await renderTables();
@@ -255,10 +295,24 @@ initTables();
 initTemplates();
 initUsage();
 
+// Início: toque no logo ou nos botões dos cartões.
+document.querySelector('header h1').addEventListener('click', () => showView('home').catch(viewFailed));
+document.getElementById('home-ia-go').addEventListener('click', () => showView('game').catch(viewFailed));
+document.getElementById('home-ia-key').addEventListener('click', () => document.dispatchEvent(new CustomEvent('open-settings')));
+document.getElementById('home-mesa-go').addEventListener('click', () => showView('tables').catch(viewFailed));
+document.getElementById('home-mesa-new').addEventListener('click', async () => {
+  await showView('tables').catch(viewFailed);
+  document.getElementById('table-new').click();
+});
+document.getElementById('home-mesa-join').addEventListener('click', async () => {
+  await showView('tables').catch(viewFailed);
+  document.getElementById('table-join-open').click();
+});
+
 applyMode(mode);
+// Toda entrada no sistema começa no Início (um link com ?view= ainda pode abrir direto outra tela).
 const requested = new URLSearchParams(location.search).get('view');
-const initial = VIEWS.includes(requested) ? requested : store.get('view');
-await showView(VIEWS.includes(initial) ? initial : HOME[mode]);
+await showView(VIEWS.includes(requested) ? requested : 'home');
 
 // A chave do Gemini não abre mais sozinha no primeiro acesso: o treinamento "Chave do Gemini" explica,
 // e as Configurações abrem na hora em que alguma ação precisar da chave.

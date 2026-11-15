@@ -118,6 +118,10 @@ Quando algo dá errado, o jogador recebe uma mensagem específica:
 
 O motivo da falha de cada ilustração fica salvo e aparece na bolha do chat e na Biblioteca.
 
+## Início
+
+Toda vez que a pessoa entra, o DataDice abre no Início: dois cartões, Mestre IA (laranja) e Mesas com amigos (azul-petróleo), com o que cada um é, o que precisa e atalhos (jogar, colocar a chave, criar mesa, entrar com código). O seletor do topo mostra os dois com um subtítulo, e no modo Mesas a cor de destaque da tela muda para azul-petróleo. "Início" no menu ou o logo voltam para lá.
+
 ## Menus e treinamentos
 
 - **Dois tipos de jogo no topo:** 🤖 **Mestre IA** (Jogo, Campanhas, Biblioteca) e 🎲 **Mesas com amigos** (Mesas). **Personagens** e o menu Admin aparecem nos dois. O DataDice lembra o último tipo usado; no modo Mesas, a chave do Gemini não é pedida.

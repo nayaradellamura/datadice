@@ -71,10 +71,11 @@
       <button type="button" id="logout" class="small">Sair</button>
     </div>
     <div id="mode-switch" class="mode-switch-top" role="group" aria-label="Tipo de jogo">
-      <button type="button" data-mode="ia" aria-pressed="false"><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="8" width="18" height="12" rx="2"/><path d="M12 8V4M8 13h.01M16 13h.01M9 17h6"/></svg> Mestre IA</button>
-      <button type="button" data-mode="mesa" aria-pressed="false"><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8" cy="8" r="1.4" fill="currentColor"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/><circle cx="16" cy="16" r="1.4" fill="currentColor"/></svg> Mesas com amigos <span id="mode-badge" class="tab-badge" hidden></span></button>
+      <button type="button" data-mode="ia" aria-pressed="false"><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="8" width="18" height="12" rx="2"/><path d="M12 8V4M8 13h.01M16 13h.01M9 17h6"/></svg><span class="mode-text"><span class="mode-name">Mestre IA</span><small class="mode-sub">a IA narra</small></span></button>
+      <button type="button" data-mode="mesa" aria-pressed="false"><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8" cy="8" r="1.4" fill="currentColor"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/><circle cx="16" cy="16" r="1.4" fill="currentColor"/></svg><span class="mode-text"><span class="mode-name">Mesas com amigos <span id="mode-badge" class="tab-badge" hidden></span></span><small class="mode-sub">um amigo é o Mestre</small></span></button>
     </div>
     <nav aria-label="Seções">
+      <button class="tab" data-view="home">Início</button>
       <button class="tab" data-view="game" data-mode="ia">Jogo</button>
       <button class="tab" data-view="tables" data-mode="mesa">Mesas <span id="tables-badge" class="tab-badge" hidden></span></button>
       <button class="tab" data-view="templates" data-mode="mesa">Modelos</button>
@@ -189,6 +190,43 @@
   </dialog>
 
   <main>
+    <section id="view-home" class="view home" hidden>
+      <div class="home-head">
+        <h2>Como você quer jogar?</h2>
+        <p class="muted">Dois jeitos de jogar RPG (D&amp;D 5e). Os personagens servem para os dois.</p>
+      </div>
+      <div class="home-modes">
+        <article class="home-card mode-ia">
+          <div class="home-card-head"><svg class="icon home-icon" viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="8" width="18" height="12" rx="2"/><path d="M12 8V4M8 13h.01M16 13h.01M9 17h6"/></svg><div><h3>Mestre IA</h3><p class="home-tag">Você joga sozinho, quando quiser</p></div></div>
+          <p>A inteligência artificial é o Mestre: narra a história, dá voz aos NPCs e reage a cada coisa que o seu personagem faz.</p>
+          <ul class="home-facts">
+            <li>Precisa de uma chave de IA. A do Gemini é grátis.</li>
+            <li>A campanha fica salva: continue de onde parou.</li>
+          </ul>
+          <p id="home-ia-status" class="home-status" hidden></p>
+          <div class="home-actions">
+            <button type="button" class="primary" id="home-ia-go">Jogar com o Mestre IA</button>
+            <button type="button" id="home-ia-key">Colocar a chave</button>
+          </div>
+        </article>
+        <article class="home-card mode-mesa">
+          <div class="home-card-head"><svg class="icon home-icon" viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8" cy="8" r="1.4" fill="currentColor"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/><circle cx="16" cy="16" r="1.4" fill="currentColor"/></svg><div><h3>Mesas com amigos</h3><p class="home-tag">Um de vocês é o Mestre</p></div></div>
+          <p>Uma pessoa conduz a história e os outros jogam, cada um no seu celular. O DataDice cuida das fichas, dos dados, do chat e da iniciativa.</p>
+          <ul class="home-facts">
+            <li>Sem IA e sem chave: é de graça.</li>
+            <li>Até 6 jogadores por mesa, com código de convite.</li>
+          </ul>
+          <p id="home-mesa-status" class="home-status" hidden></p>
+          <div class="home-actions">
+            <button type="button" class="primary" id="home-mesa-go">Ver minhas mesas</button>
+            <button type="button" id="home-mesa-new">Criar mesa</button>
+            <button type="button" id="home-mesa-join">Entrar com código</button>
+          </div>
+        </article>
+      </div>
+      <p class="muted small-print home-tip">Para trocar a qualquer momento, use o seletor no topo. Para voltar para cá, toque em Início ou no logo.</p>
+    </section>
+
     <section id="view-game" class="view game-layout" hidden>
       <button type="button" id="jump-dice" class="jump-fab" hidden>
         <span id="jump-dice-icon"><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8" cy="8" r="1.4" fill="currentColor"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/><circle cx="16" cy="16" r="1.4" fill="currentColor"/></svg></span> <span id="jump-dice-label">Dados</span>
