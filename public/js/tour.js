@@ -213,13 +213,13 @@ const counted = (tour) => tour.steps.filter((step) => !step.fallback).length;
 let running = null;
 
 function doneSet() {
-  try { return new Set(JSON.parse(store.get('tours.done') ?? '[]')); } catch { return new Set(); }
+  try { return new Set(JSON.parse(store.get(`tours.done.${session.user?.id ?? 0}`) ?? '[]')); } catch { return new Set(); }
 }
 
 function markDone(id) {
   const done = doneSet();
   done.add(id);
-  store.set('tours.done', JSON.stringify([...done]));
+  store.set(`tours.done.${session.user?.id ?? 0}`, JSON.stringify([...done]));
   updateHint();
 }
 

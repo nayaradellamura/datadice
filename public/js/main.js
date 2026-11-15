@@ -85,7 +85,7 @@ function renderHomeKey() {
 
 /** Boas-vindas: pergunta se quer o treinamento, enquanto o "Primeiros passos" estiver pendente. */
 function renderWelcome() {
-  const show = firstStepsPending() && store.get('welcome.dismissed') !== '1';
+  const show = firstStepsPending() && store.get(`welcome.dismissed.${user.id}`) !== '1';
   document.getElementById('home-welcome').hidden = !show;
   document.getElementById('home-welcome-ask').hidden = false;
   document.getElementById('home-welcome-later').hidden = true;
@@ -318,7 +318,7 @@ document.getElementById('home-welcome-yes').addEventListener('click', () => {
 });
 document.getElementById('home-welcome-no').addEventListener('click', () => {
   // Não quis agora: mostra onde fica o treinamento por alguns segundos. A bolinha continua no botão.
-  store.set('welcome.dismissed', '1');
+  store.set(`welcome.dismissed.${user.id}`, '1');
   document.getElementById('home-welcome-ask').hidden = true;
   document.getElementById('home-welcome-later').hidden = false;
   document.getElementById('tours-open').classList.add('pulse-now');
