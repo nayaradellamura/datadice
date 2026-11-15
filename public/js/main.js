@@ -1,5 +1,5 @@
 import { api, store } from './api.js';
-import { initAdmin, renderAdmin, renderMetrics } from './admin.js';
+import { initAdmin, refreshAdminBadge, renderAdmin, renderMetrics } from './admin.js';
 import { initCampaigns, renderCampaigns } from './campaign.js';
 import { initCharacterForm, openCharacter, openForeignCharacter, refreshRoster } from './character.js';
 import { initGame, refreshGameSelectors, refreshIllustrations } from './game.js';
@@ -25,6 +25,11 @@ document.getElementById('user-name').textContent = user.name;
 for (const tab of document.querySelectorAll('[data-admin]')) tab.hidden = !admin;
 for (const view of ADMIN_VIEWS) if (!admin) document.getElementById(`view-${view}`).remove();
 if (!admin) document.getElementById('admin-menu').remove();
+// Pedidos de nova senha esperando: contador no menu Admin.
+if (admin) {
+  refreshAdminBadge();
+  document.getElementById('admin-menu-button').addEventListener('click', refreshAdminBadge);
+}
 
 // Dois tipos de jogo, cada um com o seu menu: Mestre IA (Jogo, Campanhas, Biblioteca, Consumo IA) e
 // Mesas com amigos (Mesas). Personagens e o menu Admin aparecem nos dois.

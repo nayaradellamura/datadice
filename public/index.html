@@ -38,7 +38,11 @@
         <button class="primary big" id="auth-submit" type="submit">Entrar</button>
         <p id="auth-error" class="error" role="alert" hidden></p>
         <button type="button" id="auth-forgot" class="link-button auth-forgot">Esqueci minha senha</button>
-        <p id="auth-forgot-help" class="muted small-print" hidden>Peça ao administrador do DataDice um link para criar uma nova senha. O link vale por 1 hora e só pode ser usado uma vez.</p>
+        <div id="auth-forgot-help" class="forgot-box" hidden>
+          <p class="muted small-print">Digite o seu e-mail acima e envie o pedido. O administrador do DataDice recebe o aviso e te manda um link para criar uma nova senha (vale por 1 hora).</p>
+          <button type="button" id="auth-forgot-send">Pedir nova senha</button>
+          <p id="auth-forgot-status" class="muted small-print" role="status" hidden></p>
+        </div>
       </form>
       <form id="reset-form" class="stack" novalidate hidden>
         <h2 class="reset-title">Criar nova senha</h2>
@@ -75,7 +79,7 @@
       <button class="tab" data-view="library" data-mode="ia">Biblioteca</button>
       <button class="tab" data-view="usage" data-mode="ia">Consumo IA</button>
       <button type="button" class="tab admin-tab" id="admin-menu-button" data-admin hidden aria-haspopup="menu" aria-expanded="false" aria-controls="admin-menu">
-        Admin <span class="caret" aria-hidden="true">▾</span>
+        Admin <span id="admin-badge" class="tab-badge" hidden></span> <span class="caret" aria-hidden="true">▾</span>
       </button>
     </nav>
   </header>
@@ -88,7 +92,7 @@
       <span class="menu-icon"><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><path d="M7 15v3M12 10v8M17 6v12"/></svg></span><span><strong>Métricas de Tokens</strong><small>Consumo de todo o sistema</small></span>
     </button>
     <button type="button" role="menuitem" class="menu-item" data-view="admin">
-      <span class="menu-icon"><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span><span><strong>Painel Admin</strong><small>Contas e relatório geral</small></span>
+      <span class="menu-icon"><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span><span><strong>Painel Admin</strong><small id="admin-menu-hint">Contas e relatório geral</small></span>
     </button>
   </div>
 

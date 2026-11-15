@@ -94,10 +94,27 @@ export const RESET_TTL_MINUTES = 60;
 const hashResetToken = (token) => createHash('sha256').update(token).digest('hex');
 
 /** Cria o código de uso único. Os links anteriores ainda não usados dessa pessoa deixam de valer. */
+/**
+ * Pedido feito na tela de login. Não diz se o e-mail existe (a resposta é sempre a mesma), para ninguém
+ * descobrir quem tem conta. Devolve true só para os testes.
+ */
+export async function requestPasswordReset(db, email) {
+  const user = await db.get('SELECT id FROM users WHERE email = ? AND password_hash IS NOT NULL', normalizeEmail(email));
+  if (!user) return false;
+  await db.run(
+    `INSERT INTO password_reset_requests (user_id) VALUES (?)
+     ON CONFLICT (user_id) DO UPDATE SET created_at = now()`,
+    user.id,
+  );
+  return true;
+}
+
 export async function createPasswordReset(db, { userId, createdBy }) {
   const token = randomBytes(32).toString('base64url');
   const row = await db.tx(async (t) => {
     await t.run('DELETE FROM password_resets WHERE user_id = ? AND used_at IS NULL', userId);
+    // O pedido pendente foi atendido.
+    await t.run('DELETE FROM password_reset_requests WHERE user_id = ?', userId);
     return (await t.run(
       `INSERT INTO password_resets (user_id, token_hash, created_by, expires_at)
        VALUES (?, ?, ?, now() + make_interval(mins => ?)) RETURNING expires_at`,
@@ -121,6 +138,7 @@ export async function usePasswordReset(db, token, password) {
     );
     if (!reset) throw invalid;
     await t.run('UPDATE password_resets SET used_at = now() WHERE id = ?', reset.id);
+    await t.run('DELETE FROM password_reset_requests WHERE user_id = ?', reset.user_id);
     const user = (await t.run(
       `UPDATE users SET password_hash = ?, token_version = token_version + 1
        WHERE id = ? AND password_hash IS NOT NULL RETURNING *`,

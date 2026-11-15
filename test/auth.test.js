@@ -356,3 +356,32 @@ test('link de nova senha: vence em 1 hora, um novo cancela o anterior, e só o a
   assert.equal((await request('POST', '/api/auth/reset', { body: { token: third.token, password: 'senha-boa-123' } })).status, 200);
   assert.equal((await request('POST', '/api/auth/reset', { body: { token: 'nada', password: 'senha-boa-123' } })).status, 400);
 });
+
+test('esqueci minha senha: o pedido fica pendente para o admin, sem revelar quem tem conta', async () => {
+  const admin = await addUser(db, { role: 'admin' });
+  const ana = await registerPlayer();
+  const asked = await request('POST', '/api/auth/forgot', { body: { email: ' ANA@teste.dev ' } });
+  const unknown = await request('POST', '/api/auth/forgot', { body: { email: 'ninguem@teste.dev' } });
+  assert.equal(asked.status, 200);
+  assert.deepEqual(unknown, asked);
+  assert.equal((await request('POST', '/api/auth/forgot', { body: {} })).status, 400);
+
+  const player = await addUser(db);
+  assert.equal((await request('GET', '/api/admin/password-requests', { token: player.token })).status, 403);
+  const pending = (await request('GET', '/api/admin/password-requests', { token: admin.token })).body;
+  assert.deepEqual(pending.map((row) => row.email), ['ana@teste.dev']);
+
+  // Gerar o link atende o pedido.
+  await request('POST', `/api/admin/users/${ana.user.id}/password-reset`, { token: admin.token });
+  assert.deepEqual((await request('GET', '/api/admin/password-requests', { token: admin.token })).body, []);
+
+  // Pedir de novo e depois lembrar a senha: o pedido some sozinho.
+  await request('POST', '/api/auth/forgot', { body: { email: 'ana@teste.dev' } });
+  assert.equal((await request('POST', '/api/auth/login', { body: { email: 'ana@teste.dev', password: 'senha-antiga-1' } })).status, 200);
+  assert.deepEqual((await request('GET', '/api/admin/password-requests', { token: admin.token })).body, []);
+
+  // Dispensar.
+  await request('POST', '/api/auth/forgot', { body: { email: 'ana@teste.dev' } });
+  assert.equal((await request('DELETE', `/api/admin/password-requests/${ana.user.id}`, { token: admin.token })).status, 204);
+  assert.deepEqual((await request('GET', '/api/admin/password-requests', { token: admin.token })).body, []);
+});

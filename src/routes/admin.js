@@ -33,6 +33,22 @@ export function adminRoutes(db, { hub } = {}) {
     res.json({ id: user.id, role });
   });
 
+  // Pedidos de "Esqueci minha senha" ainda não atendidos.
+  router.get('/password-requests', async (_req, res) => {
+    res.json(await db.all(
+      `SELECT u.id, u.name, u.email, r.created_at FROM password_reset_requests r
+       JOIN users u ON u.id = r.user_id WHERE u.password_hash IS NOT NULL ORDER BY r.created_at`,
+    ));
+  });
+
+  // Dispensar um pedido (ex.: a pessoa avisou que lembrou a senha).
+  router.delete('/password-requests/:id', async (req, res) => {
+    const id = asId(req.params.id);
+    if (!id) throw new HttpError(404, 'Pedido não encontrado.');
+    await db.run('DELETE FROM password_reset_requests WHERE user_id = ?', id);
+    res.status(204).end();
+  });
+
   // Esqueci minha senha: gera o código do link. O link completo é montado no navegador do admin
   // (com o endereço do site) e só é mostrado uma vez.
   router.post('/users/:id/password-reset', async (req, res) => {

@@ -1150,3 +1150,12 @@ input, select { min-height: 2.25rem; }
 .reset-title { font-size: 1.15rem; margin: 0; }
 .reset-link { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; margin-top: .5rem; }
 .reset-link input { flex: 1 1 16rem; min-width: 0; font-size: .85rem; }
+
+/* Esqueci minha senha: pedido na tela de login e lista de pedidos no Painel Admin. */
+.forgot-box { display: grid; gap: .5rem; padding: .7rem; border: 1px solid var(--line); border-radius: 8px; background: var(--input); }
+.reset-requests { border-color: var(--accent); }
+.reset-request-list { list-style: none; margin: .5rem 0 0; padding: 0; display: grid; gap: .6rem; }
+.reset-request-list li { display: flex; flex-wrap: wrap; gap: .5rem 1rem; align-items: center; justify-content: space-between; padding-top: .6rem; border-top: 1px solid var(--line); }
+.reset-request-list li:first-child { border-top: 0; padding-top: 0; }
+.reset-request-actions { display: flex; gap: .5rem; }
+.admin-tab .tab-badge { margin-left: .25rem; }

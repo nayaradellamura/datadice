@@ -39,6 +39,7 @@ export async function requireLogin() {
     el('auth-hint').hidden = !register;
     el('auth-forgot').hidden = register;
     el('auth-forgot-help').hidden = true;
+    el('auth-forgot-status').hidden = true;
     form.elements.password.autocomplete = register ? 'new-password' : 'current-password';
     el('auth-submit').textContent = register ? 'Criar conta' : 'Entrar';
     showError(el('auth-error'), null);
@@ -46,7 +47,29 @@ export async function requireLogin() {
 
   const showPassword = bindEyeToggle(el('auth-password-toggle'), form.elements.password, 'senha');
 
-  el('auth-forgot').addEventListener('click', () => { el('auth-forgot-help').hidden = !el('auth-forgot-help').hidden; });
+  el('auth-forgot').addEventListener('click', () => {
+    el('auth-forgot-help').hidden = !el('auth-forgot-help').hidden;
+    if (!el('auth-forgot-help').hidden) form.elements.email.focus();
+  });
+  el('auth-forgot-send').addEventListener('click', async () => {
+    const status = el('auth-forgot-status');
+    showError(el('auth-error'), null);
+    if (!form.elements.email.value.trim()) {
+      showError(el('auth-error'), new Error('Digite o seu e-mail no campo acima.'));
+      form.elements.email.focus();
+      return;
+    }
+    el('auth-forgot-send').disabled = true;
+    try {
+      const { message } = await api('/auth/forgot', { method: 'POST', body: { email: form.elements.email.value } });
+      status.textContent = message;
+      status.hidden = false;
+    } catch (err) {
+      showError(el('auth-error'), err);
+    } finally {
+      el('auth-forgot-send').disabled = false;
+    }
+  });
   el('auth-tab-login').addEventListener('click', () => setMode('login'));
   el('auth-tab-register').addEventListener('click', () => setMode('register'));
   setMode('login');

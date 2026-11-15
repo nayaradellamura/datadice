@@ -3,7 +3,7 @@ import { Router } from 'express';
 import { HttpError } from '../middleware/errorHandler.js';
 import { rateLimit } from '../middleware/rateLimit.js';
 import {
-  checkPassword, hashPassword, usePasswordReset, normalizeEmail, publicUser, signToken, validateEmail, validateName, validatePassword,
+  checkPassword, hashPassword, requestPasswordReset, usePasswordReset, normalizeEmail, publicUser, signToken, validateEmail, validateName, validatePassword,
 } from '../services/auth.js';
 
 const DEFAULT_LIMITS = { windowMs: 15 * 60 * 1000, max: 20 };
@@ -50,7 +50,17 @@ export function authRoutes(db, { secret, registrationCode, limits = DEFAULT_LIMI
   router.post('/login', limiter, async (req, res) => {
     const user = await db.get('SELECT * FROM users WHERE email = ?', normalizeEmail(req.body?.email));
     if (!(await checkPassword(user, req.body?.password))) throw new HttpError(401, 'E-mail ou senha incorretos.');
+    // Lembrou a senha: o pedido de nova senha deixa de ser necessário.
+    await db.run('DELETE FROM password_reset_requests WHERE user_id = ?', user.id);
     res.json({ token: signToken(user, secret), user: publicUser(user) });
+  });
+
+  // Esqueci minha senha: avisa o admin. A resposta é a mesma exista ou não a conta.
+  router.post('/forgot', limiter, async (req, res) => {
+    const email = typeof req.body?.email === 'string' ? req.body.email : '';
+    if (!email.trim()) throw new HttpError(400, 'Digite o seu e-mail.');
+    await requestPasswordReset(db, email);
+    res.json({ message: 'Pedido enviado. O administrador do DataDice vai te mandar um link para criar uma nova senha (vale por 1 hora).' });
   });
 
   // Nova senha pelo link que o admin gerou. Entra direto na conta depois de trocar.

@@ -69,6 +69,75 @@ async function changeRole(user, role) {
   }
 }
 
+/** Contador de pedidos de nova senha no menu Admin. */
+export function setAdminBadge(count) {
+  const badge = el('admin-badge');
+  if (!badge) return;
+  badge.textContent = count ? String(count) : '';
+  badge.hidden = !count;
+  badge.title = count ? `${count} pedido(s) de nova senha` : '';
+  const hint = el('admin-menu-hint');
+  if (hint) hint.textContent = count ? `${count} pedido(s) de nova senha esperando` : 'Contas e relatório geral';
+}
+
+export async function refreshAdminBadge() {
+  try {
+    setAdminBadge((await api('/admin/password-requests')).length);
+  } catch {
+    // Só um aviso: sem conexão agora, tenta de novo na próxima vez.
+  }
+}
+
+const ago = (value) => {
+  const minutes = Math.max(0, Math.round((Date.now() - new Date(value).getTime()) / 60000));
+  if (minutes < 60) return minutes <= 1 ? 'agora há pouco' : `há ${minutes} min`;
+  const hours = Math.round(minutes / 60);
+  return hours < 24 ? `há ${hours} h` : `em ${new Date(value).toLocaleDateString('pt-BR')}`;
+};
+
+/** Pedidos de "Esqueci minha senha": gerar o link ou dispensar. */
+function requestsCard(requests) {
+  const card = h('div', { class: 'card reset-requests', id: 'admin-reset-requests' });
+  const render = () => {
+    if (!requests.length) {
+      card.hidden = true;
+      setAdminBadge(0);
+      return;
+    }
+    setAdminBadge(requests.length);
+    card.replaceChildren(
+      h('h3', {}, `Pedidos de nova senha (${requests.length})`),
+      h('p', { class: 'muted' }, 'Gere o link e mande para a pessoa (WhatsApp ou e-mail). Confira que é ela mesma antes de mandar.'),
+      h('ul', { class: 'reset-request-list' }, requests.map((request) => h('li', {},
+        h('span', {}, h('strong', {}, request.name), h('br'), h('span', { class: 'muted' }, `${request.email} · pediu ${ago(request.created_at)}`)),
+        h('span', { class: 'reset-request-actions' },
+          h('button', {
+            type: 'button',
+            class: 'primary',
+            onclick: async () => {
+              if (await makeResetLink(request)) {
+                requests.splice(requests.indexOf(request), 1);
+                render();
+              }
+            },
+          }, 'Gerar link'),
+          h('button', {
+            type: 'button',
+            onclick: async () => {
+              try {
+                await api(`/admin/password-requests/${request.id}`, { method: 'DELETE' });
+                requests.splice(requests.indexOf(request), 1);
+                render();
+              } catch (err) {
+                showError(el('admin-error'), err);
+              }
+            },
+          }, 'Dispensar'))))));
+  };
+  render();
+  return card;
+}
+
 /** Esqueci minha senha: o admin gera o link e manda para a pessoa (WhatsApp, por exemplo). */
 async function makeResetLink(user) {
   const box = el('admin-reset-link');
@@ -96,8 +165,10 @@ async function makeResetLink(user) {
       h('div', { class: 'reset-link' }, input, copy));
     box.hidden = false;
     box.scrollIntoView({ block: 'nearest' });
+    return true;
   } catch (err) {
     showError(el('admin-error'), err);
+    return false;
   }
 }
 
@@ -124,8 +195,11 @@ async function removeUser(user) {
 
 export async function renderAdmin() {
   try {
-    const [stats, users] = await Promise.all([api('/admin/stats'), api('/admin/users')]);
+    const [stats, users, requests] = await Promise.all([api('/admin/stats'), api('/admin/users'), api('/admin/password-requests')]);
     el('admin-content').replaceChildren(
+      // Pedidos pendentes primeiro, e o link gerado logo abaixo deles.
+      requestsCard(requests),
+      h('div', { class: 'card', id: 'admin-reset-link', hidden: true }),
       h('div', { class: 'card' },
         h('h3', {}, 'Relatório do sistema'),
         h('div', { class: 'stat-grid' },
@@ -159,7 +233,6 @@ export async function renderAdmin() {
             ? h('span', { class: 'muted' }, '—')
             : h('button', { type: 'button', class: 'small danger', onclick: () => removeUser(row) }, 'Remover')],
         ], users)),
-      h('div', { class: 'card', id: 'admin-reset-link', hidden: true }),
     );
     showError(el('admin-error'), null);
   } catch (err) {
