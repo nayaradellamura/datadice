@@ -84,6 +84,8 @@ export function xpNoticeText({ name, gain, xp, level, next, reason, canLevelUp }
   ].filter(Boolean).join(' · ');
 }
 
+const rollKey = (roll) => `${String(roll?.label ?? '').trim().toLowerCase()}|${String(roll?.dice ?? '').replace(/\s+/g, '').toLowerCase()}`;
+
 const cleanQueries = (value) =>
   Array.isArray(value) ? value.filter((query) => typeof query === 'string' && query.trim()) : [];
 
@@ -189,8 +191,16 @@ export function createGameMaster({ db, visuals, onBackgroundError = console.erro
         const rollRequests = Array.isArray(data?.gm_rolls) ? data.gm_rolls.slice(0, MAX_ROLLS_PER_ROUND) : [];
         if (round === maxRounds) break;
 
-        if (queries.length || ruleQueries.length || rollRequests.length) {
-          rolls.push(...rollRequests.map(rollForGm));
+        // Rolagem já feita neste turno (mesmo nome e dados) não é refeita: o modelo às vezes pede de novo em loop.
+        const rolled = new Set(rolls.map((roll) => rollKey(roll)));
+        const newRolls = rollRequests.filter((request) => !rolled.has(rollKey(request)));
+        if (rollRequests.length && !newRolls.length && !queries.length && !ruleQueries.length) {
+          round = maxRounds - 1; // pula direto para a rodada final, em que só dá para narrar
+          continue;
+        }
+
+        if (queries.length || ruleQueries.length || newRolls.length) {
+          rolls.push(...newRolls.map((request) => ({ ...rollForGm(request), dice: request?.dice })));
           if (queries.length || ruleQueries.length) {
             const rules = await searchRules(db, ruleQueries);
             lookups.push({

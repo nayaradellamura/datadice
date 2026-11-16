@@ -342,6 +342,14 @@ export const TEXT_ONLY_TURN_SCHEMA = {
   },
 };
 
+const ASK_FIELDS = ['lookup_queries', 'rule_queries', 'gm_rolls'];
+
+/** Formato da última rodada: sem consultas nem rolagens, para o modelo não ficar pedindo e esquecer de narrar. */
+export function narrateOnly(schema) {
+  const properties = Object.fromEntries(Object.entries(schema.properties).filter(([key]) => !ASK_FIELDS.includes(key)));
+  return { ...schema, properties, required: schema.required.filter((key) => !ASK_FIELDS.includes(key)) };
+}
+
 // Última chance do turno: o Mestre devolveu narration vazia mesmo sem poder consultar mais nada.
 const MUST_NARRATE = `ATENÇÃO: a resposta anterior veio sem narração e as consultas e rolagens deste turno acabaram. Agora é obrigatório escrever narration, respondendo ao que o jogador fez com o que você já sabe. Se algo não foi confirmado nos livros ou no histórico, improvise de forma coerente com a cena. Devolva lookup_queries, rule_queries e gm_rolls vazias; se um teste do jogador for necessário, peça na própria narração.`;
 
@@ -382,10 +390,12 @@ export async function buildTurnPrompt(db, { campaign, actor, message, directive 
     mustNarrate && MUST_NARRATE,
   ];
 
+  const baseSchema = illustrate ? TURN_SCHEMA : TEXT_ONLY_TURN_SCHEMA;
   return {
     system: sections.filter(Boolean).join('\n\n'),
     contents: toContents(recent, directive ? `[Sistema] ${directive}` : `${actor.name}: ${message}`),
-    schema: illustrate ? TURN_SCHEMA : TEXT_ONLY_TURN_SCHEMA,
+    // Sem poder consultar nem rolar de novo, o formato nem oferece esses campos: só resta narrar.
+    schema: canAskAgain ? baseSchema : narrateOnly(baseSchema),
   };
 }
 

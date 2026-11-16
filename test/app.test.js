@@ -237,6 +237,19 @@ test('XP por marco vira aviso no chat, e avisa quando pode subir de nível', asy
   assert.ok(messages.some((m) => m.sender_type === 'system' && m.message_text.startsWith('Lia ganhou 200 XP')));
 });
 
+test('Mestre pedindo rolagens sem parar: não repete as iguais e a rodada final só permite narrar', async () => {
+  const ctx = await setup();
+  const before = llm.calls.length;
+  llm.responder = ({ schema }) => ('gm_rolls' in schema.properties
+    ? turn({ narration: '', gm_rolls: [{ label: 'Dano crítico', dice: '2d8+2' }] })
+    : turn({ narration: 'O golpe derruba a criatura.' }));
+  const { status, body } = await say(ctx, 'Ataco de novo');
+  assert.equal(status, 200);
+  assert.equal(body.narration, 'O golpe derruba a criatura.');
+  assert.equal(body.rolls.length, 1, 'a mesma rolagem não é feita duas vezes');
+  assert.equal(llm.calls.length - before, 3, 'pede, repete (pula para o fim) e narra');
+});
+
 test('fatos fixados ou importantes entram em todo turno', async () => {
   const ctx = await setup();
   await api('POST', `/api/campaigns/${ctx.campaign.id}/memories`, {
