@@ -132,7 +132,8 @@ export function createGeminiClient({ apiKey, model = DEFAULT_MODEL, client, retr
 
       const usage = readUsage(response.usageMetadata);
       try {
-        return { data: JSON.parse(response.text), usage, model };
+        // finish: por que o modelo parou (STOP, MAX_TOKENS, SAFETY...). Só entra no diagnóstico do admin.
+        return { data: JSON.parse(response.text), usage, model, finish: response.candidates?.[0]?.finishReason ?? null };
       } catch {
         const failure = new HttpError(502, 'O Mestre devolveu uma resposta incompleta. Tente de novo.');
         failure.usage = usage;

@@ -3,7 +3,7 @@ import { initAdmin, refreshAdminBadge, renderAdmin, renderMetrics } from './admi
 import { initCampaigns, renderCampaigns } from './campaign.js';
 import { initCharacterForm, openCharacter, openForeignCharacter, refreshRoster } from './character.js';
 import { initErrorReport } from './error-report.js';
-import { initGame, refreshGameSelectors, refreshIllustrations } from './game.js';
+import { initGame, refreshGameSelectors, refreshIllustrations, scrollChatToEnd } from './game.js';
 import { initLibrary, renderLibrary } from './library.js';
 import { logout, requireLogin } from './login.js';
 import { initNotebook, renderNotebook } from './notebook.js';
@@ -140,6 +140,7 @@ async function showView(view) {
   // Saiu da mesa para criar uma ficha e foi para outro lugar: esquece a volta.
   if (view !== 'characters' && view !== 'tables') store.set('tables.return', '');
   updateTableReturn();
+  if (view === 'game') scrollChatToEnd();
   if (view === 'home') await renderHome();
   if (view === 'characters') await refreshRoster();
   if (view === 'campaigns') await renderCampaigns();

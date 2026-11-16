@@ -4,6 +4,7 @@ import { isD20Roll, rollWithFx } from './dice-fx.js';
 import { openSheetView } from './sheet-view.js';
 import { illustrationFigure, notifyVisualFinished } from './visual.js';
 import { rollCard } from './roll-card.js';
+import { scrollToEnd } from './chat-scroll.js';
 import { micButton, stopDictation } from './dictation.js';
 import { listenButton, narration, primeNarration, speak, stopNarration } from './narrator.js';
 
@@ -92,7 +93,12 @@ function renderHistory(messages) {
     const node = addMessage(type, type === 'system' ? null : message.sender_name, message.message_text);
     attachIllustrations(node, message.illustrations);
   }
-  el('chat-log').scrollTop = el('chat-log').scrollHeight;
+  scrollToEnd(el('chat-log'));
+}
+
+/** Ao abrir a tela do jogo, o chat começa na última mensagem. */
+export function scrollChatToEnd() {
+  scrollToEnd(el('chat-log'));
 }
 
 const gmReactsToRolls = () => store.get('gmReactsToRolls') !== 'off';

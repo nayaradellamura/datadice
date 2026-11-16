@@ -187,12 +187,23 @@ test('se o Mestre insiste em consultar até acabar, uma última chamada exige a 
   assert.equal(llm.calls.length - before, 6);
 });
 
+test('narração com outro nome de campo (modelos de outras IAs) também vale', async () => {
+  const ctx = await setup();
+  llm.responder = () => ({ data: { resposta: { narracao: 'O corvo grasna.' } }, usage: { prompt: 1, completion: 1, total: 2 }, model: 'x' });
+  const { status, body } = await say(ctx, 'Olho o corvo');
+  assert.equal(status, 200);
+  assert.equal(body.narration, 'O corvo grasna.');
+});
+
 test('sem narração nem na última chamada, o erro continua claro', async () => {
   const ctx = await setup();
   llm.responder = () => turn({ narration: '' });
   const { status, body } = await say(ctx, 'Olho em volta');
   assert.equal(status, 502);
   assert.match(body.error, /resposta vazia/);
+  // O admin vê na Atividade o que o modelo devolveu (sem o texto da conversa).
+  const log = await db.get(`SELECT error FROM activity_log WHERE error LIKE '%resposta vazia%' ORDER BY id DESC LIMIT 1`);
+  assert.match(log.error, /\[.*chamada\(s\).*campos: /);
 });
 
 test('fatos fixados ou importantes entram em todo turno', async () => {

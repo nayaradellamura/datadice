@@ -36,6 +36,43 @@ export function tokenTotals(db, userId) {
     : db.get(`SELECT ${TOTALS} FROM token_logs WHERE user_id = ?`, userId);
 }
 
+// Alguns modelos (ex.: os gratuitos do OpenRouter) mudam o nome do campo ou mandam a resposta dentro de outro objeto.
+const NARRATION_KEYS = ['narration', 'narracao', 'narração', 'narrative', 'narrativa', 'text', 'texto', 'response', 'resposta', 'message'];
+
+export function pickNarration(data, depth = 0) {
+  if (typeof data === 'string') return depth ? data.trim() : '';
+  if (!data || typeof data !== 'object' || Array.isArray(data) || depth > 2) return '';
+  for (const key of NARRATION_KEYS) {
+    const value = data[key];
+    if (typeof value === 'string' && value.trim()) return value.trim();
+  }
+  for (const value of Object.values(data)) {
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+      const inner = pickNarration(value, depth + 1);
+      if (inner) return inner;
+    }
+  }
+  return '';
+}
+
+/**
+ * Resposta vazia: o que o modelo devolveu, sem o texto (ex.: "gemini-x · 6 chamadas · campos: lookup_queries(2), gm_rolls(1)").
+ * Ajuda o admin a ver se o modelo ficou consultando, mudou o formato ou não devolveu nada.
+ */
+function describeEmpty(data, { model, calls, lookups, rolls }) {
+  const filled = data && typeof data === 'object'
+    ? Object.entries(data)
+      .filter(([, value]) => (Array.isArray(value) ? value.length : typeof value === 'string' ? value.trim() : value))
+      .map(([key, value]) => (Array.isArray(value) ? `${key}(${value.length})` : key))
+    : [];
+  return [
+    model ?? 'modelo ?',
+    `${calls} chamada(s)`,
+    `${lookups.length} consulta(s), ${rolls.length} rolagem(ns)`,
+    data && typeof data === 'object' ? `campos: ${filled.join(', ') || 'nenhum'}` : `resposta: ${typeof data}`,
+  ].join(' · ').slice(0, 300);
+}
+
 const cleanQueries = (value) =>
   Array.isArray(value) ? value.filter((query) => typeof query === 'string' && query.trim()) : [];
 
@@ -115,7 +152,8 @@ export function createGameMaster({ db, visuals, onBackgroundError = console.erro
     try {
       const lookups = [];
       const rolls = [];
-      const usage = { prompt: 0, completion: 0, total: 0 };
+      const usage = { prompt: 0, completion: 0, total: 0, calls: 0 };
+      let lastModel = null;
       let data;
       let damageReminderSent = false;
       for (let round = 0; round <= maxRounds; round += 1) {
@@ -130,8 +168,10 @@ export function createGameMaster({ db, visuals, onBackgroundError = console.erro
           illustrate,
         });
         const result = await callLlm(llm, { userId, campaignId: campaign.id, kind: turnKind }, prompt);
+        lastModel = result.finish && result.finish !== 'STOP' ? `${result.model} (${result.finish})` : result.model;
+        usage.calls += 1;
         data = result.data;
-        for (const key of Object.keys(usage)) usage[key] += result.usage[key];
+        for (const key of Object.keys(result.usage)) usage[key] += result.usage[key];
 
         const queries = cleanQueries(data?.lookup_queries);
         const ruleQueries = cleanQueries(data?.rule_queries);
@@ -160,7 +200,7 @@ export function createGameMaster({ db, visuals, onBackgroundError = console.erro
         break;
       }
 
-      let narration = typeof data?.narration === 'string' ? data.narration.trim() : '';
+      let narration = pickNarration(data);
       if (!narration) {
         // O modelo às vezes insiste em consultar (ex.: criatura que não está no manual) até as rodadas
         // acabarem. Uma última chamada, com tudo o que já foi consultado e rolado, exige a narração.
@@ -168,13 +208,19 @@ export function createGameMaster({ db, visuals, onBackgroundError = console.erro
           campaign, actor, message, directive, lookups, rolls, canAskAgain: false, illustrate, mustNarrate: true,
         });
         const result = await callLlm(llm, { userId, campaignId: campaign.id, kind: turnKind }, prompt);
-        for (const key of Object.keys(usage)) usage[key] += result.usage[key];
-        if (typeof result.data?.narration === 'string' && result.data.narration.trim()) {
+        lastModel = result.finish && result.finish !== 'STOP' ? `${result.model} (${result.finish})` : result.model;
+        usage.calls += 1;
+        for (const key of Object.keys(result.usage)) usage[key] += result.usage[key];
+        if (pickNarration(result.data)) {
           data = result.data;
-          narration = data.narration.trim();
+          narration = pickNarration(data);
         }
       }
-      if (!narration) throw new HttpError(502, 'O Mestre devolveu uma resposta vazia. Tente de novo.');
+      if (!narration) {
+        const failure = new HttpError(502, 'O Mestre devolveu uma resposta vazia. Tente de novo.');
+        failure.diagnostic = describeEmpty(data, { model: lastModel, calls: usage.calls, lookups, rolls });
+        throw failure;
+      }
 
       const validRolls = rolls.filter((roll) => !roll.error);
       const unrolledDamage = !isRecap && dealsDamage(data) && !validRolls.length;
@@ -212,7 +258,7 @@ export function createGameMaster({ db, visuals, onBackgroundError = console.erro
         warning: unrolledDamage ? UNROLLED_DAMAGE_NOTE : null,
         memory_changes: memoryChanges,
         party: (await getParty(db, campaign.id)).map(publicPartyMember),
-        tokens: { turn: usage, totals: await tokenTotals(db, userId) },
+        tokens: { turn: { prompt: usage.prompt, completion: usage.completion, total: usage.total }, totals: await tokenTotals(db, userId) },
       };
     } finally {
       busy.delete(campaign.id);

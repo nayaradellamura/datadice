@@ -24,6 +24,7 @@ export function errorHandler(err, _req, res, _next) {
     : err.type === 'entity.too.large' ? 'O arquivo enviado é grande demais.'
       : ours || err.expose ? err.message : 'Requisição inválida.';
   // O registro de atividade guarda a mesma mensagem que a pessoa viu.
-  res.locals.errorMessage = message;
+  // err.diagnostic: detalhe técnico só para o admin (nunca o conteúdo da conversa).
+  res.locals.errorMessage = err.diagnostic ? `${message} [${err.diagnostic}]` : message;
   res.status(status).json({ error: message, ...(ours && err.code ? { code: err.code } : {}) });
 }

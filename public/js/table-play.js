@@ -1,5 +1,6 @@
 import { api, emptyState, formatText, h, session, showError, signed, store } from './api.js';
 import { rollCard } from './roll-card.js';
+import { scrollToEnd } from './chat-scroll.js';
 import { micButton, stopDictation } from './dictation.js';
 import { icon } from './icons.js';
 import { isD20Roll, rollWithFx } from './dice-fx.js';
@@ -152,8 +153,7 @@ function showPane(key) {
   for (const node of document.querySelectorAll('#table-detail [data-pane]')) node.hidden = node.dataset.pane !== key;
   if (key === 'chat') {
     unread = 0;
-    const log = el('tp-log');
-    if (log) log.scrollTop = log.scrollHeight;
+    scrollToEnd(el('tp-log'));
   }
   renderTabs();
   if (key === 'library') loadGallery().catch(fail);
@@ -268,6 +268,7 @@ async function loadMessages() {
   el('tp-log').replaceChildren(h('button', { type: 'button', id: 'tp-older', class: 'small tp-older', hidden: list.length < 100, onclick: loadOlder }, 'Mensagens anteriores'));
   if (!list.length) el('tp-log').append(h('p', { class: 'empty' }, isGm() ? 'A mesa está pronta. Comece narrando a cena!' : 'Ainda não há mensagens. Diga olá para a mesa!'));
   addMessages(list);
+  scrollToEnd(el('tp-log'));
 }
 
 async function loadOlder() {
