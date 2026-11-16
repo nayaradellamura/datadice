@@ -74,6 +74,16 @@ function describeEmpty(data, { model, calls, lookups, rolls }) {
   ].join(' · ').slice(0, 300);
 }
 
+/** Texto do aviso de XP; o navegador o mostra como cartão com barra de progresso. */
+export function xpNoticeText({ name, gain, xp, level, next, reason, canLevelUp }) {
+  return [
+    `${name} ganhou ${gain} XP`,
+    reason,
+    next === null ? `${xp} XP` : `${xp}/${next} XP`,
+    canLevelUp ? `pode subir para o nível ${level + 1}!` : '',
+  ].filter(Boolean).join(' · ');
+}
+
 const cleanQueries = (value) =>
   Array.isArray(value) ? value.filter((query) => typeof query === 'string' && query.trim()) : [];
 
@@ -224,6 +234,7 @@ export function createGameMaster({ db, visuals, onBackgroundError = console.erro
       }
 
       const validRolls = rolls.filter((roll) => !roll.error);
+      const xpNotices = [];
       const unrolledDamage = !isRecap && dealsDamage(data) && !validRolls.length;
 
       const { memoryChanges, illustrations } = await db.tx(async (t) => {
@@ -241,7 +252,12 @@ export function createGameMaster({ db, visuals, onBackgroundError = console.erro
         }
         if (isRecap) return { memoryChanges: [], illustrations: [] };
         if (unrolledDamage) await insertMessage('system', 'Dados', UNROLLED_DAMAGE_NOTE);
-        await applyStateChanges(t, campaign.id, data.state_changes);
+        const xpEvents = await applyStateChanges(t, campaign.id, data.state_changes);
+        // Cada ganho de XP vira um aviso no chat: "Kael ganhou 50 XP · Missão concluída · 350/900 XP".
+        for (const event of xpEvents) {
+          xpNotices.push(xpNoticeText(event));
+          await insertMessage('system', 'XP', xpNotices.at(-1));
+        }
         await saveScene(t, campaign.id, cleanScene(data.scene));
         return {
           memoryChanges: await applyMemoryUpdates(t, campaign.id, data.memory_updates),
@@ -259,6 +275,7 @@ export function createGameMaster({ db, visuals, onBackgroundError = console.erro
         rolls: validRolls.map((roll) => roll.text),
         scene: await getScene(db, campaign.id),
         warning: unrolledDamage ? UNROLLED_DAMAGE_NOTE : null,
+        xp_notices: xpNotices,
         memory_changes: memoryChanges,
         party: (await getParty(db, campaign.id)).map(publicPartyMember),
         tokens: { turn: { prompt: usage.prompt, completion: usage.completion, total: usage.total }, totals: await tokenTotals(db, userId) },

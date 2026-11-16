@@ -7,7 +7,7 @@ import {
   searchMemories,
   searchOldMessages,
 } from './memory.js';
-import { ABILITIES, COINS, publicPartyMember, signed, SKILLS } from './sheet.js';
+import { ABILITIES, COINS, nextLevelXp, publicPartyMember, signed, SKILLS } from './sheet.js';
 import { listVisuals } from './visuals.js';
 
 export const RECENT_WINDOW = 20;
@@ -77,6 +77,7 @@ export const TURN_SCHEMA = {
             },
           },
           xp_gain: { type: 'integer' },
+          xp_reason: { type: 'string' },
           inspiration: { type: 'boolean' },
         },
         required: ['character_id'],
@@ -144,6 +145,13 @@ CRIATURAS E COMBATE:
 - Durante um combate, mantenha uma memória do tipo "event" chamada "Combate atual", com importância 5, listando cada inimigo, PV restantes, condições e ordem de iniciativa. Atualize a cada turno e use status "resolved" quando o combate acabar.
 - Ao final de um combate vencido, conceda o XP da criatura com xp_gain, dividido entre os participantes.
 
+EXPERIÊNCIA (XP) ALÉM DO COMBATE:
+- Recompense também o progresso fora das lutas, com xp_gain e um xp_reason curto (ex.: "Missão concluída: as ruínas da sentinela", "Descobriu a passagem secreta", "Convenceu os guardas sem lutar").
+- Marco pequeno (descoberta importante, enigma resolvido, conflito resolvido sem combate, cena de interpretação marcante): cerca de 10% do XP que falta para o próximo nível do personagem.
+- Marco grande (missão ou capítulo concluído, objetivo importante alcançado): de 25% a 50% do que falta.
+- Conversas comuns, viagens sem acontecimentos e ações rotineiras não dão XP. No máximo um marco por turno, e nunca o mesmo motivo duas vezes.
+- Em combate, use xp_reason com o nome da criatura vencida (ex.: "Venceu 2 goblins").
+
 CONTINUIDADE (prioridade máxima):
 - As seções de memória abaixo são o cânone da campanha. Nunca as contradiga.
 - NPCs mantêm nome, personalidade, aparência, relações e promessas. NPCs mortos continuam mortos, salvo justificativa dentro da história.
@@ -201,7 +209,7 @@ function formatCharacter(row) {
   const attacks = (sheet.attacks ?? []).map((attack) => `${attack.name} (${attack.bonus}; ${attack.damage})`);
 
   const lines = [
-    `- character_id ${member.character_id}: ${member.name}, ${member.race}, ${member.class} nível ${member.level}, antecedente: ${member.background || '—'}, alinhamento: ${member.alignment || '—'}, XP ${member.xp}`,
+    `- character_id ${member.character_id}: ${member.name}, ${member.race}, ${member.class} nível ${member.level} (próximo nível com ${nextLevelXp(member.level) ?? '—'} XP), antecedente: ${member.background || '—'}, alinhamento: ${member.alignment || '—'}, XP ${member.xp}`,
     `  PV ${member.current_hp}/${member.max_hp}${member.temp_hp ? ` + ${member.temp_hp} temporários` : ''}; estado: ${member.status}; CA ${member.armor_class}; iniciativa ${signed(derived.initiative)}; deslocamento ${member.speed}; proficiência ${signed(derived.proficiency_bonus)}; Percepção passiva ${derived.passive_perception}; Dados de Vida ${member.level - member.hit_dice_used}/${member.level} d${member.hit_die}${member.inspiration ? '; tem Inspiração' : ''}`,
     `  ${ABILITIES.map(score).join(', ')}`,
     `  Salvaguardas proficientes: ${saves.join(', ') || 'nenhuma'}`,

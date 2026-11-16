@@ -1,4 +1,4 @@
-import { COINS } from './sheet.js';
+import { COINS, nextLevelXp } from './sheet.js';
 
 function parse(value, fallback) {
   try {
@@ -46,12 +46,17 @@ export function nextVitals(row, change) {
 }
 
 /** Aplica as mudanças vindas do Mestre, ignorando personagens e valores inválidos. */
+/**
+ * Aplica as mudanças do Mestre. Devolve os ganhos de XP (para o aviso no chat), com o novo total
+ * e se o personagem já pode subir de nível.
+ */
 export async function applyStateChanges(db, campaignId, changes) {
+  const xpEvents = [];
   for (const change of asList(changes)) {
     // O id vem do modelo: só um inteiro vai para a consulta.
     if (!Number.isInteger(change?.character_id)) continue;
     const row = await db.get(
-      `SELECT cc.*, c.hit_die, c.level, c.sheet_json FROM campaign_characters cc
+      `SELECT cc.*, c.hit_die, c.level, c.sheet_json, c.name, c.xp FROM campaign_characters cc
        JOIN characters c ON c.id = cc.character_id
        WHERE cc.campaign_id = ? AND cc.character_id = ?`,
       campaignId, change.character_id,
@@ -85,8 +90,18 @@ export async function applyStateChanges(db, campaignId, changes) {
     }
 
     const vitals = nextVitals(row, change);
-    if (Number.isInteger(change.xp_gain)) {
-      await db.run('UPDATE characters SET xp = GREATEST(0, xp + ?) WHERE id = ?', clamp(change.xp_gain, -1000000, 1000000), row.character_id);
+    if (Number.isInteger(change.xp_gain) && change.xp_gain !== 0) {
+      const gain = clamp(change.xp_gain, -1000000, 1000000);
+      await db.run('UPDATE characters SET xp = GREATEST(0, xp + ?) WHERE id = ?', gain, row.character_id);
+      const xp = Math.max(0, asInt(row.xp) + gain);
+      const next = nextLevelXp(row.level);
+      if (gain > 0) {
+        xpEvents.push({
+          name: row.name, gain, xp, level: row.level, next,
+          reason: clean(change.xp_reason ?? '').slice(0, 80),
+          canLevelUp: next !== null && xp >= next,
+        });
+      }
     }
 
     await db.run(
@@ -100,4 +115,5 @@ export async function applyStateChanges(db, campaignId, changes) {
       row.id,
     );
   }
+  return xpEvents;
 }

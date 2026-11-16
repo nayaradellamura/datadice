@@ -57,6 +57,11 @@ const SHORT_TEXT_FIELDS = ['age', 'height', 'weight', 'eyes', 'skin', 'hair', 'o
 
 export const modifier = (score) => Math.floor((score - 10) / 2);
 export const proficiencyBonus = (level) => 2 + Math.floor((level - 1) / 4);
+
+// XP total para chegar a cada nível (Livro do Jogador, D&D 5e). Índice 0 = nível 1.
+export const XP_TABLE = [0, 300, 900, 2700, 6500, 14000, 23000, 34000, 48000, 64000, 85000, 100000, 120000, 140000, 165000, 195000, 225000, 265000, 305000, 355000];
+/** XP total para o próximo nível, ou null no nível 20. */
+export const nextLevelXp = (level) => XP_TABLE[Math.max(1, level)] ?? null;
 export const signed = (value) => (value >= 0 ? `+${value}` : `${value}`);
 
 export function findClass(name) {

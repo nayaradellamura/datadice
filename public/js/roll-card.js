@@ -70,3 +70,33 @@ export function rollCard(text, { className = '', extra = [] } = {}) {
   h('span', { class: 'roll-total' }, roll.total),
   ...extra);
 }
+
+/**
+ * Aviso de XP ("Kael ganhou 50 XP · Missão concluída · 350/900 XP · pode subir para o nível 2!")
+ * vira um cartão com barra de progresso e, quando der, um botão para subir de nível.
+ */
+const XP_NOTICE = /^(.+?) ganhou (\d+) XP(?: · (.+?))?(?: · (\d+)(?:\/(\d+))? XP)(?: · pode subir para o nível (\d+)!)?$/;
+
+export function parseXp(text) {
+  const match = XP_NOTICE.exec(String(text ?? '').trim());
+  if (!match) return null;
+  const [, who, gain, reason = '', xp, next, newLevel] = match;
+  return { who, gain: Number(gain), reason, xp: Number(xp), next: next ? Number(next) : null, newLevel: newLevel ? Number(newLevel) : null };
+}
+
+export function xpCard(text, { onLevelUp = null } = {}) {
+  const info = parseXp(text);
+  if (!info) return null;
+  const percent = info.next ? Math.min(100, Math.round((info.xp / info.next) * 100)) : 100;
+  return h('div', { class: `msg xp-card${info.newLevel ? ' can-level' : ''}`, title: text },
+    h('span', { class: 'roll-die xp-icon', 'aria-hidden': 'true' }, icon('crown', 18)),
+    h('span', { class: 'roll-main' },
+      h('span', { class: 'roll-label' }, h('strong', {}, info.who), info.reason ? ` · ${info.reason}` : ' · Experiência'),
+      h('span', { class: 'xp-bar', role: 'img', 'aria-label': info.next ? `${info.xp} de ${info.next} XP para o próximo nível` : `${info.xp} XP` },
+        h('i', { style: `width:${percent}%` })),
+      h('span', { class: 'roll-math' }, info.next ? `${info.xp} / ${info.next} XP` : `${info.xp} XP`),
+      info.newLevel && h('span', { class: 'xp-level' },
+        `Pode subir para o nível ${info.newLevel}!`,
+        onLevelUp && h('button', { type: 'button', class: 'small primary', onclick: () => onLevelUp(info.who) }, 'Subir de nível'))),
+    h('span', { class: 'roll-total xp-gain' }, `+${info.gain}`));
+}

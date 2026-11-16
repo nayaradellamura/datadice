@@ -221,6 +221,22 @@ test('o Mestre informa o ambiente da cena, que fica salvo para a faixa do chat',
   assert.equal(state.body.scene.place, 'taverna');
 });
 
+test('XP por marco vira aviso no chat, e avisa quando pode subir de nível', async () => {
+  const ctx = await setup();
+  const id = ctx.character.id;
+  llm.responder = () => turn({ state_changes: [{ character_id: id, xp_gain: 120, xp_reason: 'Descobriu a passagem secreta' }] });
+  const first = await say(ctx, 'Empurro a estante');
+  assert.deepEqual(first.body.xp_notices, ['Lia ganhou 120 XP · Descobriu a passagem secreta · 120/300 XP']);
+  assert.match(llm.calls.at(-1).system, /EXPERIÊNCIA \(XP\) ALÉM DO COMBATE/);
+  assert.match(llm.calls.at(-1).system, /próximo nível com 300 XP/);
+
+  llm.responder = () => turn({ state_changes: [{ character_id: id, xp_gain: 200, xp_reason: 'Missão concluída' }] });
+  const second = await say(ctx, 'Entrego o mapa ao capitão');
+  assert.match(second.body.xp_notices[0], /320\/300 XP · pode subir para o nível 2!$/);
+  const messages = (await api('GET', `/api/campaigns/${ctx.campaign.id}/messages`)).body;
+  assert.ok(messages.some((m) => m.sender_type === 'system' && m.message_text.startsWith('Lia ganhou 200 XP')));
+});
+
 test('fatos fixados ou importantes entram em todo turno', async () => {
   const ctx = await setup();
   await api('POST', `/api/campaigns/${ctx.campaign.id}/memories`, {
@@ -653,6 +669,21 @@ test('o Mestre reage à rolagem usando o valor gravado no servidor', async () =>
 
   const again = await api('POST', '/api/chat', { campaign_id: ctx.campaign.id, character_id: ctx.character.id, roll_id: roll.id });
   assert.equal(again.status, 409, 'a mesma rolagem não gera duas respostas');
+});
+
+test('rolagens feitas enquanto o Mestre respondia: ele reage a todas juntas', async () => {
+  const ctx = await setup();
+  await say(ctx, 'Ataco a criatura');
+  const url = `/api/campaigns/${ctx.campaign.id}/roll`;
+  const first = (await api('POST', url, { character_id: ctx.character.id, kind: 'dice', expression: '1d20+2' })).body;
+  const second = (await api('POST', url, { character_id: ctx.character.id, kind: 'dice', expression: '1d20+2' })).body;
+  // O Mestre respondeu à primeira depois que a segunda já tinha sido feita.
+  await api('POST', '/api/chat', { campaign_id: ctx.campaign.id, character_id: ctx.character.id, roll_ids: [first.id] });
+  llm.responder = () => turn({ narration: 'O segundo golpe acerta.' });
+  const { status, body } = await api('POST', '/api/chat', { campaign_id: ctx.campaign.id, character_id: ctx.character.id, roll_ids: [second.id] });
+  assert.equal(status, 200);
+  assert.equal(body.narration, 'O segundo golpe acerta.');
+  assert.ok(JSON.stringify(llm.calls.at(-1).contents.at(-1)).includes(second.message_text));
 });
 
 test('rolagem de outra campanha ou mensagem que não é rolagem não é aceita', async () => {

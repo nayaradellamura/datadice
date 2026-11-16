@@ -12,30 +12,43 @@ export const turnOptions = (req) => ({
   userId: req.user.id,
 });
 
-/** O resultado vem do banco, nunca do navegador: assim ninguém consegue forjar o valor do dado. */
-async function rollDirective(db, campaignId, rollId) {
-  const id = Number(rollId);
-  const roll = Number.isInteger(id) && id > 0 && id <= 2147483647 && (await db.get(
-    `SELECT id, message_text FROM messages WHERE id = ? AND campaign_id = ? AND sender_type = 'system' AND sender_name = 'Dados'`,
-    id, campaignId,
-  ));
-  if (!roll) throw new HttpError(400, 'Rolagem não encontrada nesta campanha.');
+/**
+ * O resultado vem do banco, nunca do navegador: assim ninguém consegue forjar o valor do dado.
+ * Rolagens feitas enquanto o Mestre ainda respondia chegam juntas (roll_ids): ele reage a todas de uma vez.
+ * Só recusa se o jogador já escreveu depois delas (a história seguiu).
+ */
+async function rollDirective(db, campaignId, rollIds) {
+  const ids = [...new Set([].concat(rollIds).map(Number))].filter((id) => Number.isInteger(id) && id > 0 && id <= 2147483647).slice(0, 10);
+  if (!ids.length) throw new HttpError(400, 'Rolagem não encontrada nesta campanha.');
+  const rolls = await db.all(
+    `SELECT id, message_text FROM messages
+     WHERE campaign_id = ? AND sender_type = 'system' AND sender_name = 'Dados' AND id IN (${ids.map(() => '?').join(', ')})
+     ORDER BY id`,
+    campaignId, ...ids,
+  );
+  if (rolls.length !== ids.length) throw new HttpError(400, 'Rolagem não encontrada nesta campanha.');
 
   const answered = await db.get(
-    `SELECT 1 FROM messages WHERE campaign_id = ? AND id > ? AND sender_type IN ('gm', 'player') LIMIT 1`,
-    campaignId, roll.id,
+    `SELECT 1 FROM messages WHERE campaign_id = ? AND id > ? AND sender_type = 'player' LIMIT 1`,
+    campaignId, rolls[0].id,
   );
   if (answered) throw new HttpError(409, 'O Mestre já seguiu a história depois desta rolagem.');
 
-  return `[Rolagem] ${roll.message_text}
-Esta rolagem acabou de ser feita no sistema. Se foi um teste que você pediu, use exatamente este resultado, compare com a CD que você definiu e narre a consequência. Se ninguém pediu, trate como a tentativa do personagem na cena atual. Não peça a mesma rolagem de novo.`;
+  const found = rolls.map((roll) => roll.id);
+  if (rolls.length === 1) {
+    return { ids: found, directive: `[Rolagem] ${rolls[0].message_text}
+Esta rolagem acabou de ser feita no sistema. Se foi um teste que você pediu, use exatamente este resultado, compare com a CD que você definiu e narre a consequência. Se ninguém pediu, trate como a tentativa do personagem na cena atual. Não peça a mesma rolagem de novo.` };
+  }
+  return { ids: found, directive: `[Rolagens] ${rolls.map((roll) => roll.message_text).join(' | ')}
+Estas rolagens foram feitas em sequência no sistema, algumas enquanto você narrava. Use exatamente estes resultados, na ordem, e narre a consequência de todas juntas. Não peça as mesmas rolagens de novo.` };
 }
 
 export function chatRoutes(db, gameMaster) {
   const router = Router();
+  const reacted = new Set();
 
   router.post('/', async (req, res) => {
-    const { campaign_id, character_id, message, roll_id } = req.body ?? {};
+    const { campaign_id, character_id, message, roll_id, roll_ids } = req.body ?? {};
 
     const campaign = await campaignFor(db, req.user, campaign_id ?? 0);
 
@@ -43,9 +56,18 @@ export function chatRoutes(db, gameMaster) {
     if (!actor) throw new HttpError(400, 'Este personagem não está nesta campanha.');
     if (actor.status === 'dead') throw new HttpError(400, 'Este personagem está morto.');
 
-    if (roll_id !== undefined) {
-      const directive = await rollDirective(db, campaign.id, roll_id);
-      res.json(await gameMaster.playTurn({ campaign, actor, message: directive, directive, ...turnOptions(req) }));
+    if (roll_id !== undefined || roll_ids !== undefined) {
+      const { directive, ids } = await rollDirective(db, campaign.id, Array.isArray(roll_ids) ? roll_ids : roll_id);
+      // A mesma rolagem não gera duas respostas do Mestre.
+      if (ids.some((id) => reacted.has(id))) throw new HttpError(409, 'O Mestre já reagiu a esta rolagem.');
+      for (const id of ids) reacted.add(id);
+      try {
+        res.json(await gameMaster.playTurn({ campaign, actor, message: directive, directive, ...turnOptions(req) }));
+      } catch (err) {
+        for (const id of ids) reacted.delete(id);
+        throw err;
+      }
+      if (reacted.size > 5000) reacted.clear();
       return;
     }
 

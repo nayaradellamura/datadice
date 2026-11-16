@@ -3,7 +3,7 @@ import { icon } from './icons.js';
 import { isD20Roll, rollWithFx } from './dice-fx.js';
 import { openSheetView } from './sheet-view.js';
 import { illustrationFigure, notifyVisualFinished } from './visual.js';
-import { rollCard } from './roll-card.js';
+import { rollCard, xpCard } from './roll-card.js';
 import { scrollToEnd } from './chat-scroll.js';
 import { PLACE_LABELS, sceneArt, TIME_LABELS } from './scene-art.js';
 import { micButton, stopDictation } from './dictation.js';
@@ -30,12 +30,18 @@ function addMessage(type, who, text) {
   const atBottom = log.scrollHeight - log.scrollTop - log.clientHeight < 120;
   // Falas do Mestre têm o botão "Ouvir" (voz do aparelho).
   // Rolagens viram um cartão compacto; outros avisos do sistema continuam como texto.
-  const node = (type === 'system' && rollCard(text))
+  const node = (type === 'system' && (rollCard(text) || xpCard(text, { onLevelUp: openLevelUp })))
     || h('div', { class: `msg ${type}` }, who && h('span', { class: 'who' }, who), formatText(text),
       type === 'gm' && listenButton(text));
   log.append(node);
   if (atBottom || type === 'player') log.scrollTop = log.scrollHeight;
   return node;
+}
+
+/** "Subir de nível": abre a ficha do personagem para a pessoa escolher PV e habilidades do novo nível. */
+function openLevelUp(name) {
+  const member = party.find((item) => item.name === name) ?? currentMember();
+  if (member) document.dispatchEvent(new CustomEvent('open-character', { detail: member.character_id }));
 }
 
 function attachIllustrations(node, illustrations) {
@@ -125,6 +131,9 @@ export function scrollChatToEnd() {
   scrollToEnd(el('chat-log'));
 }
 
+// Rolagens feitas enquanto o Mestre ainda respondia; ele reage a elas logo depois.
+const queuedRolls = [];
+
 const gmReactsToRolls = () => store.get('gmReactsToRolls') !== 'off';
 
 // No celular o painel de dados fica abaixo do chat: um botão flutuante leva de um ao outro.
@@ -188,8 +197,10 @@ async function roll(body) {
     // No celular, volta ao chat para o jogador ver o resultado e a resposta do Mestre.
     if (phone.matches) scrollToChat();
     // O Mestre recebe a rolagem na hora, sem o jogador precisar escrever o resultado no chat.
-    if (gmReactsToRolls() && session?.status === 'active' && !sending) {
-      await playGmTurn({ roll_id: result.id });
+    if (gmReactsToRolls() && session?.status === 'active') {
+      // Mestre ainda respondendo: a rolagem entra na fila e ele reage a todas assim que terminar.
+      if (sending) queuedRolls.push(result.id);
+      else await playGmTurn({ roll_ids: [result.id] });
     }
   } catch (err) {
     showError(el('chat-error'), err);
@@ -587,6 +598,7 @@ async function playGmTurn(extraBody, playerNode = null) {
     renderScene(result.scene);
     if (narration.auto) speak(result.narration, [...el('chat-log').querySelectorAll('.msg.gm')].at(-1)?.querySelector('.msg-listen'));
     if (result.warning) addMessage('system', null, result.warning);
+    for (const notice of result.xp_notices ?? []) addMessage('system', null, notice);
     if (result.memory_changes.length) addMessage('note', null, `Caderno atualizado: ${result.memory_changes.join(', ')}`);
     party = result.party;
     return true;
@@ -598,6 +610,10 @@ async function playGmTurn(extraBody, playerNode = null) {
   } finally {
     sending = false;
     renderMember();
+    if (queuedRolls.length && session?.status === 'active') {
+      const ids = queuedRolls.splice(0);
+      playGmTurn({ roll_ids: ids });
+    }
   }
 }
 
@@ -612,6 +628,8 @@ async function sendMessage(event) {
   el('chat-log').querySelector('.empty')?.remove();
   const playerNode = addMessage('player', member.name, text);
   // Se falhar, a mensagem sai da tela mas continua na caixa de texto para reenviar.
+  // A mensagem do jogador já leva o Mestre a ver as rolagens anteriores no histórico.
+  queuedRolls.length = 0;
   if (await playGmTurn({ message: text }, playerNode)) input.value = '';
   input.focus();
 }
