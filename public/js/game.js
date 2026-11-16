@@ -99,30 +99,46 @@ const gmReactsToRolls = () => store.get('gmReactsToRolls') !== 'off';
 
 // No celular o painel de dados fica abaixo do chat: um botão flutuante leva de um ao outro.
 const phone = matchMedia('(max-width: 860px)');
-let chatInView = true;
-const smooth = () => (matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth');
 
-function updateJumpButton() {
-  const button = el('jump-dice');
-  button.hidden = !phone.matches || !document.querySelector('.dice-card');
-  el('jump-dice-label').textContent = chatInView ? 'Dados' : 'Chat';
-  el('jump-dice-icon').replaceChildren(icon(chatInView ? 'dice' : 'chat'));
-  button.setAttribute('aria-label', chatInView ? 'Ir para Rolar dados' : 'Voltar ao chat');
+// No celular, ficha, dados e a escolha da campanha ficam numa gaveta que sobe por cima do chat
+// (como nas mesas com amigos). O chat ocupa a tela; "Ficha e dados" abre a gaveta.
+// A gaveta abriu sozinha para escolher campanha e personagem: fecha quando os dois estiverem prontos.
+let sheetOpenedForSetup = false;
+
+// part: 'sheet' abre no topo (campanha e ficha); 'dice' abre direto em "Rolar dados".
+function setSheet(open, part = 'sheet') {
+  const show = open && phone.matches;
+  document.body.classList.toggle('game-sheet-open', show);
+  el('game-sheet-backdrop').hidden = !show;
+  el('chat-sheet').setAttribute('aria-expanded', String(show && part === 'sheet'));
+  el('chat-dice').setAttribute('aria-expanded', String(show && part === 'dice'));
+  if (!show) return;
+  const sheet = el('game-sheet');
+  // "Dados" mostra só a parte de rolar; "Ficha" mostra todo o resto (campanha, ficha, inventário, magias).
+  sheet.dataset.part = part;
+  sheet.querySelector('.sheet-head strong').textContent = part === 'dice' ? 'Rolar dados' : 'Ficha';
+  sheet.scrollTop = 0;
 }
 
+function updateJumpButton() {
+  el('chat-sheet').hidden = !phone.matches;
+  el('chat-dice').hidden = !phone.matches || !document.querySelector('#game-sheet .dice-card');
+  el('jump-dice').hidden = true;
+}
+
+/** Depois de rolar, a gaveta fecha para o jogador ver o resultado e a resposta do Mestre. */
 function scrollToChat() {
-  el('chat-form').scrollIntoView({ behavior: smooth(), block: 'end' });
+  setSheet(false);
 }
 
 function initJumpButton() {
-  new IntersectionObserver(([entry]) => {
-    chatInView = entry.isIntersecting;
-    updateJumpButton();
-  }).observe(el('chat-form'));
-  phone.addEventListener('change', updateJumpButton);
-  el('jump-dice').addEventListener('click', () => {
-    if (chatInView) document.querySelector('.dice-card')?.scrollIntoView({ behavior: smooth(), block: 'start' });
-    else scrollToChat();
+  phone.addEventListener('change', () => { setSheet(false); updateJumpButton(); });
+  el('chat-sheet').addEventListener('click', () => setSheet(true, 'sheet'));
+  el('chat-dice').addEventListener('click', () => setSheet(true, 'dice'));
+  el('game-sheet-close').addEventListener('click', () => setSheet(false));
+  el('game-sheet-backdrop').addEventListener('click', () => setSheet(false));
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && document.body.classList.contains('game-sheet-open')) setSheet(false);
   });
 }
 
@@ -421,6 +437,10 @@ function renderMember() {
   el('chat-send').disabled = !member || dead || sending;
   el('chat-input').placeholder = dead ? `${member.name} morreu. Escolha outro personagem ao lado para continuar.` : 'O que você faz?';
   renderSessionGate(member);
+  if (member && sheetOpenedForSetup) {
+    sheetOpenedForSetup = false;
+    setSheet(false);
+  }
   if (!member) {
     panel.replaceChildren();
     updateJumpButton();
@@ -479,6 +499,9 @@ async function loadCampaign() {
     session = null;
     renderHistory([]);
     renderMember();
+    // Sem campanha escolhida, a primeira coisa a fazer está na gaveta.
+    setSheet(true);
+    sheetOpenedForSetup = true;
     return;
   }
   const [state, messages] = await Promise.all([

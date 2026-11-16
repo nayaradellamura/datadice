@@ -117,6 +117,8 @@ async function showView(view) {
   // Saindo do Início: o topo e o menu voltam (no modo da tela, ou no último usado, ex.: Personagens).
   else if (document.body.dataset.mode === 'home') applyMode(VIEW_MODES[view] ?? mode);
   for (const name of VIEWS) document.getElementById(`view-${name}`).hidden = name !== view;
+  // O CSS usa a tela atual (ex.: no jogo, o topo fica mais baixo no celular para sobrar espaço ao chat).
+  document.body.dataset.view = view;
   // Nas telas de administração, quem fica marcada é a aba "Admin".
   const adminButton = document.getElementById('admin-menu-button');
   adminButton.classList.toggle('active', ADMIN_VIEWS.includes(view));

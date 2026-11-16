@@ -302,11 +302,18 @@
         <div id="session-gate" class="session-gate" hidden></div>
         <form id="chat-form" class="chat-form">
           <textarea id="chat-input" rows="2" maxlength="4000" placeholder="O que você faz?" aria-label="Sua ação"></textarea>
+          <button type="button" id="chat-sheet" class="chat-tool" hidden aria-controls="game-sheet" aria-expanded="false"><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Ficha</button>
+          <button type="button" id="chat-dice" class="chat-tool" hidden aria-controls="game-sheet" aria-expanded="false"><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8" cy="8" r="1.4" fill="currentColor"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/><circle cx="16" cy="16" r="1.4" fill="currentColor"/></svg> Dados</button>
           <button class="primary" id="chat-send" type="submit">Enviar</button>
         </form>
         <p id="chat-error" class="error" role="alert" hidden></p>
       </div>
-      <aside class="side-panel">
+      <div id="game-sheet-backdrop" class="sheet-backdrop" hidden></div>
+      <aside class="side-panel" id="game-sheet" aria-label="Ficha e dados">
+        <div class="sheet-head">
+          <strong>Ficha e dados</strong>
+          <button type="button" id="game-sheet-close" class="small">Fechar</button>
+        </div>
         <div class="card">
           <label>Campanha <select id="game-campaign"></select></label>
           <label>Personagem <select id="game-character"></select></label>
