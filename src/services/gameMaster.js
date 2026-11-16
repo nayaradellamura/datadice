@@ -4,6 +4,7 @@ import { applyMemoryUpdates, consultArchive, getSummary, listCreatureNames, MESS
 import { buildSummaryPrompt, buildTurnPrompt, getParty, RECENT_WINDOW } from './promptBuilder.js';
 import { publicPartyMember } from './sheet.js';
 import { applyStateChanges } from './state.js';
+import { cleanScene, getScene, saveScene } from './scene.js';
 
 const SUMMARY_TRIGGER = 20;
 const SUMMARY_BATCH = 40;
@@ -241,6 +242,7 @@ export function createGameMaster({ db, visuals, onBackgroundError = console.erro
         if (isRecap) return { memoryChanges: [], illustrations: [] };
         if (unrolledDamage) await insertMessage('system', 'Dados', UNROLLED_DAMAGE_NOTE);
         await applyStateChanges(t, campaign.id, data.state_changes);
+        await saveScene(t, campaign.id, cleanScene(data.scene));
         return {
           memoryChanges: await applyMemoryUpdates(t, campaign.id, data.memory_updates),
           // Ilustrações desligadas: a ficha vai para a Biblioteca só com a descrição, e nenhuma imagem é cobrada.
@@ -255,6 +257,7 @@ export function createGameMaster({ db, visuals, onBackgroundError = console.erro
         narration,
         illustrations,
         rolls: validRolls.map((roll) => roll.text),
+        scene: await getScene(db, campaign.id),
         warning: unrolledDamage ? UNROLLED_DAMAGE_NOTE : null,
         memory_changes: memoryChanges,
         party: (await getParty(db, campaign.id)).map(publicPartyMember),

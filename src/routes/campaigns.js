@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { getScene } from '../services/scene.js';
 import { requireAdmin } from '../middleware/auth.js';
 import { HttpError } from '../middleware/errorHandler.js';
 import { campaignFor, characterFor } from '../services/access.js';
@@ -131,6 +132,7 @@ export function campaignRoutes(db) {
       party: publicParty(await getParty(db, campaign.id)),
       chronicle: (await getSummary(db, campaign.id)).summary_text,
       session: await getSessionState(db, campaign.id),
+      scene: await getScene(db, campaign.id),
     });
   });
 

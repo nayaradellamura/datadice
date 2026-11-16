@@ -92,27 +92,39 @@ export function visualImage(visual) {
   if (visual.image_status === 'pending') {
     return h('div', { class: 'visual-placeholder', role: 'status' }, h('div', { class: 'spinner' }), `Ilustrando ${visual.name}...`);
   }
-  return h('div', { class: 'visual-placeholder is-failed' },
-    h('strong', {}, `Não foi possível ilustrar ${visual.name}.`),
-    visual.image_error && h('span', {}, visual.image_error));
+  // Ilustrações ligadas e a imagem falhou: o ícone do tipo e o motivo em letra pequena, sem alarde.
+  return h('div', { class: 'visual-placeholder is-blank has-reason' },
+    icon(KIND_ICONS[visual.kind] ?? 'image', 40),
+    visual.image_error && h('span', { class: 'visual-reason' }, `Sem imagem: ${visual.image_error.replace(/^Imagem não gerada[:.]\s*/i, '')}`));
 }
 
 /**
  * Falha que não aparece no chat: plano gratuito (o aviso único já explicou) ou ilustrações desligadas
  * (quem desligou não quer ouvir falar de imagem). Imagens prontas continuam aparecendo.
  */
-export const hiddenInChat = (visual) => visual.image_status === 'none'
-  || (visual.image_status === 'failed' && (!settings.imagesEnabled || isNoFreeTier(visual.image_error)));
+export const hiddenInChat = (visual) => visual.image_status === 'failed' && !withoutImage(visual) && !settings.imagesEnabled;
 
 /** Sem imagem de propósito (desligada ou plano gratuito): na Biblioteca vira um cartão comum, não um erro. */
+// Com as ilustrações desligadas, qualquer imagem que falhou também vira cartão comum (sem cara de erro).
 export const withoutImage = (visual) => visual.image_status === 'none'
-  || (visual.image_status === 'failed' && isNoFreeTier(visual.image_error));
+  || (visual.image_status === 'failed' && (isNoFreeTier(visual.image_error) || !settings.imagesEnabled));
 
 const KIND_ICONS = { npc: 'user', monster: 'sword', location: 'map' };
 
 /** Imagem dentro da bolha do chat. Devolve null quando ela não deve aparecer. */
 export function illustrationFigure(visual) {
   if (hiddenInChat(visual)) return null;
+  // Sem imagem (modo gratuito ou ilustrações desligadas): um cartão com retrato desenhado, nome e descrição.
+  if (withoutImage(visual)) {
+    return h('figure', { class: `persona-card kind-${visual.kind}`, dataset: { key: `${visual.kind}:${visual.id}` } },
+      h('span', { class: 'persona-avatar', 'aria-hidden': 'true' },
+        icon(KIND_ICONS[visual.kind] ?? 'image', 22),
+        h('b', {}, (visual.name.trim()[0] ?? '?').toUpperCase())),
+      h('figcaption', {},
+        h('span', { class: 'persona-kind' }, KIND_LABELS[visual.kind]),
+        h('strong', {}, visual.name),
+        visual.description && h('span', { class: 'persona-desc' }, formatText(visual.description))));
+  }
   return h('figure', {
     class: `illustration kind-${visual.kind} status-${visual.image_status}`,
     dataset: { key: `${visual.kind}:${visual.id}` },

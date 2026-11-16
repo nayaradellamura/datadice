@@ -5,6 +5,7 @@ import { openSheetView } from './sheet-view.js';
 import { illustrationFigure, notifyVisualFinished } from './visual.js';
 import { rollCard } from './roll-card.js';
 import { scrollToEnd } from './chat-scroll.js';
+import { PLACE_LABELS, sceneArt, TIME_LABELS } from './scene-art.js';
 import { micButton, stopDictation } from './dictation.js';
 import { listenButton, narration, primeNarration, speak, stopNarration } from './narrator.js';
 
@@ -94,6 +95,29 @@ function renderHistory(messages) {
     attachIllustrations(node, message.illustrations);
   }
   scrollToEnd(el('chat-log'));
+}
+
+/** Faixa ilustrada do ambiente atual (lugar e hora informados pelo Mestre), no topo do chat. */
+function renderScene(scene) {
+  const banner = el('scene-banner');
+  if (!scene) {
+    banner.hidden = true;
+    banner.replaceChildren();
+    return;
+  }
+  const key = `${scene.place}|${scene.time}|${scene.name}`;
+  if (banner.dataset.key === key && !banner.hidden) return;
+  banner.dataset.key = key;
+  banner.hidden = false;
+  banner.replaceChildren(
+    sceneArt(scene.place, scene.time),
+    h('div', { class: 'scene-info' },
+      h('span', { class: 'scene-kind' }, `${PLACE_LABELS[scene.place] ?? ''} · ${TIME_LABELS[scene.time] ?? ''}`),
+      scene.name && h('strong', { class: 'scene-name' }, scene.name)),
+  );
+  banner.classList.remove('scene-enter');
+  void banner.offsetWidth;
+  banner.classList.add('scene-enter');
 }
 
 /** Ao abrir a tela do jogo, o chat começa na última mensagem. */
@@ -503,6 +527,7 @@ async function loadCampaign() {
   if (!campaignId()) {
     party = [];
     session = null;
+    renderScene(null);
     renderHistory([]);
     renderMember();
     // Sem campanha escolhida, a primeira coisa a fazer está na gaveta.
@@ -516,6 +541,7 @@ async function loadCampaign() {
   ]);
   party = state.party;
   session = state.session;
+  renderScene(state.scene);
   renderHistory(messages);
   renderMember();
 }
@@ -558,6 +584,7 @@ async function playGmTurn(extraBody, playerNode = null) {
     pending.remove();
     for (const roll of result.rolls) addMessage('system', null, roll);
     attachIllustrations(addMessage('gm', 'Mestre', result.narration), result.illustrations);
+    renderScene(result.scene);
     if (narration.auto) speak(result.narration, [...el('chat-log').querySelectorAll('.msg.gm')].at(-1)?.querySelector('.msg-listen'));
     if (result.warning) addMessage('system', null, result.warning);
     if (result.memory_changes.length) addMessage('note', null, `Caderno atualizado: ${result.memory_changes.join(', ')}`);

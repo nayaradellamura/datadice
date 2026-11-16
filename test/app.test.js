@@ -206,6 +206,21 @@ test('sem narração nem na última chamada, o erro continua claro', async () =>
   assert.match(log.error, /\[.*chamada\(s\).*campos: /);
 });
 
+test('o Mestre informa o ambiente da cena, que fica salvo para a faixa do chat', async () => {
+  const ctx = await setup();
+  llm.responder = () => turn({ scene: { place: 'taverna', time: 'noite', name: 'Pônei Saltitante' } });
+  const { body } = await say(ctx, 'Entro na taverna');
+  assert.deepEqual(body.scene, { place: 'taverna', time: 'noite', name: 'Pônei Saltitante' });
+  assert.ok(llm.calls.at(-1).system.includes('SCENE'));
+  assert.ok('scene' in llm.calls.at(-1).schema.properties);
+
+  // Lugar desconhecido não apaga a cena anterior.
+  llm.responder = () => turn({ scene: { place: 'nave espacial', time: 'dia', name: 'X' } });
+  await say(ctx, 'Olho em volta');
+  const state = await api('GET', `/api/campaigns/${ctx.campaign.id}/state`);
+  assert.equal(state.body.scene.place, 'taverna');
+});
+
 test('fatos fixados ou importantes entram em todo turno', async () => {
   const ctx = await setup();
   await api('POST', `/api/campaigns/${ctx.campaign.id}/memories`, {
