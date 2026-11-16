@@ -52,7 +52,8 @@ const securityHeaders = (hsts) => (_req, res, next) => {
     'x-content-type-options': 'nosniff',
     'x-frame-options': 'DENY',
     'referrer-policy': 'no-referrer',
-    'permissions-policy': 'camera=(), microphone=(), geolocation=()',
+    // Microfone só para o próprio site (ditado no chat); câmera e localização continuam bloqueadas.
+    'permissions-policy': 'camera=(), microphone=(self), geolocation=()',
     // Outras janelas e sites não conseguem se pendurar nesta página nem embutir as respostas dela.
     'cross-origin-opener-policy': 'same-origin',
     'cross-origin-resource-policy': 'same-origin',

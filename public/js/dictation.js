@@ -50,7 +50,7 @@ export function micButton(textarea, { onError = () => {} } = {}) {
     };
     recognition.onerror = (event) => {
       if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
-        onError('O navegador bloqueou o microfone. Libere o acesso ao microfone para este site e tente de novo.');
+        onError('O microfone está bloqueado para este site. Toque no cadeado (ou no ícone ao lado do endereço), permita o Microfone e tente de novo.');
       } else if (event.error === 'no-speech') {
         onError('Não ouvi nada. Toque no microfone e fale perto do celular.');
       } else if (event.error === 'network') {
