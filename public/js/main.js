@@ -358,9 +358,11 @@ document.getElementById('home-mesa-join').addEventListener('click', async () => 
 });
 
 applyMode(mode);
-// Toda entrada no sistema começa no Início (um link com ?view= ainda pode abrir direto outra tela).
+// Toda entrada no sistema começa no Início; a do admin começa no painel Admin
+// (um link com ?view= ainda pode abrir direto outra tela).
 const requested = new URLSearchParams(location.search).get('view');
-await showView(VIEWS.includes(requested) ? requested : 'home');
+const startView = admin && !user.viewer ? 'admin' : 'home';
+await showView(VIEWS.includes(requested) ? requested : startView);
 
 // A chave do Gemini não abre mais sozinha no primeiro acesso: o treinamento "Chave do Gemini" explica,
 // e as Configurações abrem na hora em que alguma ação precisar da chave.
