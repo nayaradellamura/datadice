@@ -1,4 +1,6 @@
 import { api, emptyState, formatText, h, session, showError, signed, store } from './api.js';
+import { rollCard } from './roll-card.js';
+import { micButton, stopDictation } from './dictation.js';
 import { icon } from './icons.js';
 import { isD20Roll, rollWithFx } from './dice-fx.js';
 import { openSheetView } from './sheet-view.js';
@@ -184,6 +186,19 @@ function messageNode(message) {
   else if (message.kind === 'imagem') { type = 'gm'; who = 'Mestre'; }
   else if (message.visibility !== 'all') { type = 'notice'; }
   const privacy = privacyLabel(message);
+  if (message.kind === 'rolagem') {
+    const card = rollCard(message.text, {
+      className: `${mine ? 'mine' : ''}${message.sender_type === 'gm' ? ' by-gm' : ''}${message.visibility !== 'all' ? ' private' : ''}`,
+      extra: [
+        privacy && h('span', { class: 'tp-private roll-private' }, icon('lock', 13), privacy),
+        h('time', { class: 'tp-time', datetime: message.created_at }, timeOf(message.created_at)),
+      ],
+    });
+    if (card) {
+      card.dataset.id = String(message.id);
+      return card;
+    }
+  }
   return h('div', {
     class: `msg ${type}${mine ? ' mine' : ''}${message.visibility !== 'all' ? ' private' : ''}`,
     dataset: { id: String(message.id) },
@@ -311,6 +326,7 @@ async function send(event) {
   if (!text) return;
   const button = el('tp-send');
   button.disabled = true;
+  stopDictation();
   showError(el('table-error'), null);
   try {
     const message = await api(tableUrl('/messages'), {
@@ -1394,6 +1410,7 @@ export async function enterTable(tableView, nextHooks) {
     libraryFilter = 'all';
     libraryEditing = null;
     buildPanes();
+    el('tp-send').before(micButton(el('tp-input'), { onError: (text) => showError(el('table-error'), text) }) ?? '');
     renderComposerOptions();
     renderDiceTools();
     await Promise.all([loadMessages(), loadParty(), loadInitiative(), loadLibrary(), loadNotes()]);

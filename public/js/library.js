@@ -1,6 +1,6 @@
-import { api, campaignLabel, emptyState, fillSelect, formatText, h, showError } from './api.js';
+import { api, campaignLabel, emptyState, fillSelect, formatText, h, settings, showError } from './api.js';
 import { selectedCampaign } from './game.js';
-import { KIND_LABELS, visualImage } from './visual.js';
+import { KIND_LABELS, visualImage, withoutImage } from './visual.js';
 
 // Mesmos nomes e ordem da Biblioteca das mesas.
 const FILTERS = [['all', 'Tudo'], ['npc', 'NPCs'], ['monster', 'Monstros'], ['location', 'Locais']];
@@ -27,8 +27,10 @@ function card(visual) {
       h('strong', {}, visual.name),
       h('span', { class: 'library-kind' }, KIND_LABELS[visual.kind]),
       visual.description && h('p', { class: 'muted' }, formatText(visual.description)),
-      visual.image_status === 'failed' &&
-        h('button', { type: 'button', class: 'small', onclick: () => retry(visual) }, 'Tentar de novo')));
+      // Gerar a imagem depois só faz sentido com as ilustrações ligadas.
+      settings.imagesEnabled && (visual.image_status === 'failed' || visual.image_status === 'none') &&
+        h('button', { type: 'button', class: 'small', onclick: () => retry(visual) },
+          withoutImage(visual) ? 'Gerar imagem' : 'Tentar de novo')));
 }
 
 function renderList() {

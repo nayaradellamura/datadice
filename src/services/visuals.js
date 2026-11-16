@@ -89,7 +89,7 @@ export function createVisuals({ db, onError = (err) => console.warn(`Imagem não
      * Grava os elementos marcados pelo Mestre e os liga à mensagem, reutilizando o cache.
      * Roda dentro da transação do turno; a geração começa só depois, com enqueueAll.
      */
-    async register(t, campaignId, messageId, illustrations) {
+    async register(t, campaignId, messageId, illustrations, { withImages = true } = {}) {
       if (!Array.isArray(illustrations)) return [];
       const results = [];
 
@@ -108,15 +108,15 @@ export function createVisuals({ db, onError = (err) => console.warn(`Imagem não
         if (existing) {
           id = existing.id;
           // Uma imagem que falhou ganha nova chance quando o elemento volta à cena.
-          if (existing.image_status === 'failed') {
+          if (withImages && ['failed', 'none'].includes(existing.image_status)) {
             await t.run(`UPDATE ${config.table} SET image_status = 'pending', image_error = NULL WHERE id = ?`, id);
           }
         } else {
           const imagePrompt = prompt || description;
           if (!imagePrompt) continue;
           ({ id } = await t.run(
-            `INSERT INTO ${config.table} (campaign_id, name, name_key, description, image_prompt) VALUES (?, ?, ?, ?, ?) RETURNING id`,
-            campaignId, name, key, description, imagePrompt,
+            `INSERT INTO ${config.table} (campaign_id, name, name_key, description, image_prompt, image_status) VALUES (?, ?, ?, ?, ?, ?) RETURNING id`,
+            campaignId, name, key, description, imagePrompt, withImages ? 'pending' : 'none',
           ));
         }
 

@@ -1,4 +1,5 @@
-import { formatText, h } from './api.js';
+import { formatText, h, settings } from './api.js';
+import { icon } from './icons.js';
 
 export const KIND_LABELS = { npc: 'NPC', monster: 'Monstro', location: 'Local' };
 
@@ -30,7 +31,20 @@ const TOAST_SECONDS = 20;
 const shownFailures = new Set();
 
 /** Avisa, em qualquer aba, que uma arte terminou. O aviso some sozinho, mas a arte fica na bolha e na Biblioteca. */
+// Chave sem faturamento: toda imagem vai falhar igual. Desliga as ilustrações uma vez em vez de avisar a cada turno.
+const isNoFreeTier = (error) => /plano gratuito/i.test(error ?? '') && /não inclui geração de imagens/i.test(error ?? '');
+
 export function notifyVisualFinished(visual) {
+  if (visual.image_status !== 'ready' && isNoFreeTier(visual.image_error)) {
+    if (!settings.imagesEnabled) return;
+    settings.imagesEnabled = false;
+    visual = {
+      ...visual,
+      image_error: 'Sua chave está no plano gratuito, que não gera imagens. Desliguei "Gerar ilustrações" para este aviso não se repetir; o jogo segue normal. Se ativar o faturamento da chave, ligue de novo em Configurações.',
+    };
+  }
+  // Ilustrações desligadas: nenhum aviso de falha.
+  else if (visual.image_status !== 'ready' && !settings.imagesEnabled) return;
   // Várias imagens do mesmo turno costumam falhar pelo mesmo motivo (ex.: plano gratuito): um aviso basta.
   if (visual.image_status !== 'ready' && visual.image_error) {
     if (shownFailures.has(visual.image_error)) return;
@@ -72,6 +86,9 @@ export function visualImage(visual) {
       onclick: () => openImage(visual),
     }, h('img', { src: visual.image_url, alt: visual.description || visual.name, loading: 'lazy' }));
   }
+  if (withoutImage(visual)) {
+    return h('div', { class: 'visual-placeholder is-blank', 'aria-hidden': 'true' }, icon(KIND_ICONS[visual.kind] ?? 'image', 44));
+  }
   if (visual.image_status === 'pending') {
     return h('div', { class: 'visual-placeholder', role: 'status' }, h('div', { class: 'spinner' }), `Ilustrando ${visual.name}...`);
   }
@@ -80,8 +97,22 @@ export function visualImage(visual) {
     visual.image_error && h('span', {}, visual.image_error));
 }
 
-/** Imagem dentro da bolha do chat. */
+/**
+ * Falha que não aparece no chat: plano gratuito (o aviso único já explicou) ou ilustrações desligadas
+ * (quem desligou não quer ouvir falar de imagem). Imagens prontas continuam aparecendo.
+ */
+export const hiddenInChat = (visual) => visual.image_status === 'none'
+  || (visual.image_status === 'failed' && (!settings.imagesEnabled || isNoFreeTier(visual.image_error)));
+
+/** Sem imagem de propósito (desligada ou plano gratuito): na Biblioteca vira um cartão comum, não um erro. */
+export const withoutImage = (visual) => visual.image_status === 'none'
+  || (visual.image_status === 'failed' && isNoFreeTier(visual.image_error));
+
+const KIND_ICONS = { npc: 'user', monster: 'sword', location: 'map' };
+
+/** Imagem dentro da bolha do chat. Devolve null quando ela não deve aparecer. */
 export function illustrationFigure(visual) {
+  if (hiddenInChat(visual)) return null;
   return h('figure', {
     class: `illustration kind-${visual.kind} status-${visual.image_status}`,
     dataset: { key: `${visual.kind}:${visual.id}` },

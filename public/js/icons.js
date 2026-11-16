@@ -25,6 +25,7 @@ const ICONS = {
   pen: [['path', { d: 'M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z' }]],
   volume: [['path', { d: 'M11 5L6 9H2v6h4l5 4z' }], ['path', { d: 'M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14' }]],
   stop: [['rect', { x: 6, y: 6, width: 12, height: 12, rx: 2 }]],
+  mic: [['rect', { x: 9, y: 2, width: 6, height: 12, rx: 3 }], ['path', { d: 'M19 10v1a7 7 0 0 1-14 0v-1M12 18v4M8 22h8' }]],
 };
 
 /** Ícone SVG (decorativo: aria-hidden). size em px. */

@@ -195,18 +195,28 @@ test('as imagens do turno são geradas juntas, e esperar termina só quando toda
   assert.equal((await db.get(`SELECT image_status FROM monsters`)).image_status, 'ready');
 });
 
-test('ilustrações desligadas: o Mestre nem é instruído a pedir, e nada é gerado', async () => {
+test('ilustrações desligadas: o Mestre descreve, a ficha vai para a Biblioteca sem imagem, e nada é gerado', async () => {
   const ctx = await setup();
   llm.responder = () => turn([ogre]);
   const { body } = await api('POST', '/api/chat', { campaign_id: ctx.campaign.id, character_id: ctx.character.id, message: 'Olho em volta', enable_image_gen: false });
   await idle();
-  assert.deepEqual(body.illustrations, []);
   assert.equal(images.calls.length, 0);
-  assert.equal((await db.get('SELECT COUNT(*) AS n FROM monsters')).n, 0);
+  assert.equal(body.illustrations?.length, 1, JSON.stringify(body));
+  assert.equal(body.illustrations[0].image_status, 'none');
+  const [visual] = (await api('GET', `/api/campaigns/${ctx.campaign.id}/visuals`)).body;
+  assert.equal(visual.image_status, 'none');
+  assert.equal(visual.image_error, null);
   const prompt = llm.calls.at(-1);
   assert.ok(!prompt.system.includes('ILLUSTRATIONS'), 'sem as instruções de imagem');
+  assert.ok(prompt.system.includes('descreva a aparência na própria narração'));
   assert.ok(prompt.system.includes('MEMORY_UPDATES'), 'o resto das regras continua');
-  assert.ok(!('illustrations' in prompt.schema.properties));
+  assert.ok(!('image_prompt_en' in prompt.schema.properties.illustrations.items.properties), 'sem prompt de imagem: economiza tokens');
+
+  // Ligou as imagens depois: o elemento ganha a imagem quando volta à cena.
+  await say(ctx);
+  await idle();
+  assert.equal(images.calls.length, 1);
+  assert.equal((await db.get('SELECT image_status FROM monsters')).image_status, 'ready');
 });
 
 test('o motivo da falha fica salvo para o jogador ler, e some ao tentar de novo', async () => {

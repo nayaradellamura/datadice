@@ -57,7 +57,8 @@ const FORMULA_PREFIX = new RegExp(String.raw`^\s*(${LOOSE_TERM}(?:\s*[+-]\s*${LO
 
 /** Lê fórmulas como 1d8+1d6+3. Devolve os grupos de dados e o bônus fixo, ou null se for inválida. */
 export function parseFormula(expression) {
-  const text = String(expression ?? '').replace(/\s+/g, '').toLowerCase();
+  // "d20" e "2d6+d4" valem como "1d20" e "2d6+1d4": é assim que muita gente escreve.
+  const text = String(expression ?? '').replace(/\s+/g, '').toLowerCase().replace(/(^|[+-])d/g, '$11d');
   if (!FORMULA.test(text)) return null;
   const groups = [];
   let bonus = 0;

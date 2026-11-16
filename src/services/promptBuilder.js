@@ -305,20 +305,36 @@ function formatRolls(rolls, canAskAgain) {
 }
 
 // Com as ilustrações desligadas, o Mestre nem é instruído a pedi-las: economiza tokens da chave do jogador.
-const GM_RULES_NO_IMAGES = GM_RULES.replace(/ILLUSTRATIONS \(.*?\n\n(?=MEMORY_UPDATES)/s, '');
-const { illustrations: _illustrations, ...TEXT_ONLY_PROPERTIES } = TURN_SCHEMA.properties;
+// Sem imagens, o Mestre descreve a aparência na narração e registra a ficha na Biblioteca, só com texto.
+const NO_IMAGES_RULES = `BIBLIOTECA (sem imagens nesta campanha: o jogador imagina pelo que você descreve; preencha só na resposta que traz a narração):
+- Quando um NPC, monstro ou local marcante aparecer pela primeira vez, descreva a aparência na própria narração com detalhes visuais: rosto, porte, roupas, cores, cheiros, luz e clima. Figurantes e lugares de passagem não precisam disso.
+- Registre esse elemento em illustrations, para ele ficar na Biblioteca. Na maioria dos turnos, devolva uma lista vazia. No máximo 3 por turno.
+- kind: "npc", "monster" ou "location". Para monstros, use o nome da espécie (ex.: "Goblin"). Se o elemento estiver na lista JÁ NA BIBLIOTECA, repita o nome exatamente igual.
+- description: duas ou três frases em português sobre o que o jogador vê, sem segredos nem valores de jogo.
+
+`;
+const GM_RULES_NO_IMAGES = GM_RULES.replace(/ILLUSTRATIONS \(.*?\n\n(?=MEMORY_UPDATES)/s, NO_IMAGES_RULES);
+const { image_prompt_en: _prompt, ...TEXT_ITEM_PROPERTIES } = TURN_SCHEMA.properties.illustrations.items.properties;
 export const TEXT_ONLY_TURN_SCHEMA = {
   ...TURN_SCHEMA,
-  properties: TEXT_ONLY_PROPERTIES,
-  required: TURN_SCHEMA.required.filter((key) => key !== 'illustrations'),
+  properties: {
+    ...TURN_SCHEMA.properties,
+    illustrations: {
+      type: 'array',
+      items: { type: 'object', properties: TEXT_ITEM_PROPERTIES, required: ['kind', 'name', 'description'] },
+    },
+  },
 };
 
-export async function buildTurnPrompt(db, { campaign, actor, message, directive = null, lookups = [], rolls = [], canAskAgain = true, illustrate = true }) {
+// Última chance do turno: o Mestre devolveu narration vazia mesmo sem poder consultar mais nada.
+const MUST_NARRATE = `ATENÇÃO: a resposta anterior veio sem narração e as consultas e rolagens deste turno acabaram. Agora é obrigatório escrever narration, respondendo ao que o jogador fez com o que você já sabe. Se algo não foi confirmado nos livros ou no histórico, improvise de forma coerente com a cena. Devolva lookup_queries, rule_queries e gm_rolls vazias; se um teste do jogador for necessário, peça na própria narração.`;
+
+export async function buildTurnPrompt(db, { campaign, actor, message, directive = null, lookups = [], rolls = [], canAskAgain = true, illustrate = true, mustNarrate = false }) {
   const summary = await getSummary(db, campaign.id);
   const recent = await getRecentMessages(db, campaign.id, summary.last_message_id);
   const core = await getCoreMemories(db, campaign.id);
   const index = await getMemoryIndex(db, campaign.id);
-  const illustrated = illustrate ? await listVisuals(db, campaign.id) : [];
+  const illustrated = await listVisuals(db, campaign.id);
   const party = await getParty(db, campaign.id);
 
   const lastGm = [...recent].reverse().find((row) => row.sender_type === 'gm');
@@ -344,9 +360,10 @@ export async function buildTurnPrompt(db, { campaign, actor, message, directive 
         .map((row) => `${row.type}: ${row.name}${row.status === 'active' ? '' : ` [${row.status}]`}`)
         .join('; ')}`,
     illustrated.length &&
-      `JÁ ILUSTRADOS (a imagem é reutilizada):\n${illustrated.map((row) => `${row.kind}: ${row.name}`).join('; ')}`,
+      `${illustrate ? 'JÁ ILUSTRADOS (a imagem é reutilizada)' : 'JÁ NA BIBLIOTECA'}:\n${illustrated.map((row) => `${row.kind}: ${row.name}`).join('; ')}`,
     lookups.length && formatLookups(lookups, canAskAgain),
     rolls.length && formatRolls(rolls, canAskAgain),
+    mustNarrate && MUST_NARRATE,
   ];
 
   return {

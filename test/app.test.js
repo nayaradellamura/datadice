@@ -175,6 +175,26 @@ test('sem registro, o Mestre é avisado, e as consultas têm limite', async () =
   assert.ok(llm.calls.at(-1).system.includes('As consultas deste turno acabaram'));
 });
 
+test('se o Mestre insiste em consultar até acabar, uma última chamada exige a narração', async () => {
+  const ctx = await setup();
+  const before = llm.calls.length;
+  llm.responder = ({ system }) => (system.includes('ATENÇÃO: a resposta anterior veio sem narração')
+    ? turn({ narration: 'A criatura tem marcas profanas.' })
+    : turn({ narration: '', rule_queries: ['criatura corrompida'] }));
+  const { status, body } = await say(ctx, 'Investigo a criatura');
+  assert.equal(status, 200);
+  assert.equal(body.narration, 'A criatura tem marcas profanas.');
+  assert.equal(llm.calls.length - before, 6);
+});
+
+test('sem narração nem na última chamada, o erro continua claro', async () => {
+  const ctx = await setup();
+  llm.responder = () => turn({ narration: '' });
+  const { status, body } = await say(ctx, 'Olho em volta');
+  assert.equal(status, 502);
+  assert.match(body.error, /resposta vazia/);
+});
+
 test('fatos fixados ou importantes entram em todo turno', async () => {
   const ctx = await setup();
   await api('POST', `/api/campaigns/${ctx.campaign.id}/memories`, {
@@ -270,6 +290,8 @@ test('a rolagem de dados é feita pelo servidor e entra no contexto do Mestre', 
   const damage = await api('POST', url, { character_id: ctx.character.id, kind: 'dice', expression: '2d6+3' });
   assert.match(damage.body.message_text, /2d6 \+ 3: \[\d, \d\] \+ 3 = \d+/);
   assert.equal((await api('POST', url, { character_id: ctx.character.id, kind: 'dice', expression: '9d7' })).status, 400);
+  const shorthand = await api('POST', url, { character_id: ctx.character.id, kind: 'dice', expression: 'D20 + d4' });
+  assert.match(shorthand.body.message_text, /1d20 \+ 1d4: \[\d+\] \+ \[\d\] = \d+/);
 
   await say(ctx, 'Tento abrir a fechadura');
   assert.ok(JSON.stringify(llm.calls.at(-1).contents).includes('[Sistema] Lia rolou'));

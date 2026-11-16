@@ -1332,3 +1332,40 @@ body[data-mode="home"]:not(:has(#admin-menu-button:not([hidden]))) .topbar nav {
 .msg-listen.speaking { color: var(--accent); border-color: var(--accent); }
 .narration-row { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: .5rem; }
 #narration-test.speaking { color: var(--accent); border-color: var(--accent); }
+
+/* Biblioteca: ficha sem imagem de propósito, com o ícone do tipo em vez de um aviso de erro */
+.visual-placeholder.is-blank { border-style: solid; color: var(--line); background: radial-gradient(circle at 50% 40%, var(--panel-2), var(--input) 70%); }
+.library-card.kind-npc .visual-placeholder.is-blank { color: color-mix(in srgb, var(--accent) 55%, var(--line)); }
+.library-card.kind-monster .visual-placeholder.is-blank { color: color-mix(in srgb, #ff9180 55%, var(--line)); }
+.library-card.kind-location .visual-placeholder.is-blank { color: color-mix(in srgb, #f2b52a 55%, var(--line)); }
+
+/* Rolagens no chat: cartão compacto com quem rolou, o quê, a conta pequena e o total em destaque */
+.msg.roll { align-self: center; display: flex; align-items: center; gap: .65rem; width: min(100%, 27rem); max-width: 100%;
+  padding: .45rem .55rem .45rem .5rem; background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+  color: var(--text); font: .88rem/1.3 var(--sans); text-align: left; white-space: normal; }
+.msg.roll + .msg.roll { margin-top: -.3rem; }
+.roll-die { flex: none; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 9px;
+  background: rgb(242 107 58 / .14); color: var(--ia, #f26b3a); }
+.msg.roll.by-gm .roll-die { background: rgb(242 181 42 / .14); color: var(--gold); }
+.roll-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: .1rem; }
+.roll-label { overflow-wrap: anywhere; }
+.roll-label strong { color: var(--ia, #f26b3a); font-weight: 700; }
+.msg.roll.by-gm .roll-label strong { color: var(--gold); }
+.roll-math { color: var(--muted); font-size: .78rem; font-variant-numeric: tabular-nums; }
+.roll-note { font-size: .74rem; font-weight: 700; color: var(--muted); }
+.roll-total { flex: none; min-width: 2.6rem; padding: .2rem .4rem; border-radius: 9px; background: var(--input);
+  font: 800 1.3rem/1 var(--sans); text-align: center; font-variant-numeric: tabular-nums; }
+.msg.roll.crit { border-color: var(--good); }
+.msg.roll.crit .roll-total, .msg.roll.crit .roll-note { color: var(--good); }
+.msg.roll.fumble { border-color: color-mix(in srgb, var(--danger, #ff9180) 60%, var(--line)); }
+.msg.roll.fumble .roll-total, .msg.roll.fumble .roll-note { color: var(--danger, #ff9180); }
+.msg.roll .tp-time { align-self: flex-end; margin-left: 0; font-size: .7rem; }
+.msg.roll .roll-private { position: absolute; top: -.6rem; left: .6rem; padding: 0 .35rem; background: var(--panel); font-size: .7rem; }
+.msg.roll.private { position: relative; border-color: rgb(242 181 42 / .55); }
+
+/* Microfone do chat: fala vira texto na caixa de mensagem */
+.mic-button { flex: none; display: grid; place-items: center; width: 2.6rem; min-height: 2.5rem; padding: 0; border-radius: 10px; color: var(--muted); }
+.mic-button:hover { color: var(--text); }
+.mic-button.listening { color: #fff; background: var(--danger, #ff9180); border-color: var(--danger, #ff9180); animation: mic-pulse 1.4s ease-in-out infinite; }
+@keyframes mic-pulse { 0%, 100% { box-shadow: 0 0 0 0 rgb(255 145 128 / .55); } 50% { box-shadow: 0 0 0 7px rgb(255 145 128 / 0); } }
+@media (prefers-reduced-motion: reduce) { .mic-button.listening { animation: none; } }

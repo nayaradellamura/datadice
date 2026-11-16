@@ -160,7 +160,20 @@ export function createGameMaster({ db, visuals, onBackgroundError = console.erro
         break;
       }
 
-      const narration = typeof data?.narration === 'string' ? data.narration.trim() : '';
+      let narration = typeof data?.narration === 'string' ? data.narration.trim() : '';
+      if (!narration) {
+        // O modelo às vezes insiste em consultar (ex.: criatura que não está no manual) até as rodadas
+        // acabarem. Uma última chamada, com tudo o que já foi consultado e rolado, exige a narração.
+        const prompt = await buildTurnPrompt(db, {
+          campaign, actor, message, directive, lookups, rolls, canAskAgain: false, illustrate, mustNarrate: true,
+        });
+        const result = await callLlm(llm, { userId, campaignId: campaign.id, kind: turnKind }, prompt);
+        for (const key of Object.keys(usage)) usage[key] += result.usage[key];
+        if (typeof result.data?.narration === 'string' && result.data.narration.trim()) {
+          data = result.data;
+          narration = data.narration.trim();
+        }
+      }
       if (!narration) throw new HttpError(502, 'O Mestre devolveu uma resposta vazia. Tente de novo.');
 
       const validRolls = rolls.filter((roll) => !roll.error);
@@ -184,8 +197,8 @@ export function createGameMaster({ db, visuals, onBackgroundError = console.erro
         await applyStateChanges(t, campaign.id, data.state_changes);
         return {
           memoryChanges: await applyMemoryUpdates(t, campaign.id, data.memory_updates),
-          // Ilustrações desligadas: nada é registrado nem gerado, e nenhuma imagem é cobrada.
-          illustrations: illustrate ? await visuals.register(t, campaign.id, gmMessageId, data.illustrations) : [],
+          // Ilustrações desligadas: a ficha vai para a Biblioteca só com a descrição, e nenhuma imagem é cobrada.
+          illustrations: await visuals.register(t, campaign.id, gmMessageId, data.illustrations, { withImages: illustrate }),
         };
       });
 

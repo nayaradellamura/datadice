@@ -3,6 +3,8 @@ import { icon } from './icons.js';
 import { isD20Roll, rollWithFx } from './dice-fx.js';
 import { openSheetView } from './sheet-view.js';
 import { illustrationFigure, notifyVisualFinished } from './visual.js';
+import { rollCard } from './roll-card.js';
+import { micButton, stopDictation } from './dictation.js';
 import { listenButton, narration, primeNarration, speak, stopNarration } from './narrator.js';
 
 const STATUS_LABELS = { active: 'Ativo', unconscious: 'Inconsciente', stable: 'Estável', dead: 'Morto' };
@@ -25,16 +27,19 @@ function addMessage(type, who, text) {
   const log = el('chat-log');
   const atBottom = log.scrollHeight - log.scrollTop - log.clientHeight < 120;
   // Falas do Mestre têm o botão "Ouvir" (voz do aparelho).
-  const node = h('div', { class: `msg ${type}` }, who && h('span', { class: 'who' }, who), formatText(text),
-    type === 'gm' && listenButton(text));
+  // Rolagens viram um cartão compacto; outros avisos do sistema continuam como texto.
+  const node = (type === 'system' && rollCard(text))
+    || h('div', { class: `msg ${type}` }, who && h('span', { class: 'who' }, who), formatText(text),
+      type === 'gm' && listenButton(text));
   log.append(node);
   if (atBottom || type === 'player') log.scrollTop = log.scrollHeight;
   return node;
 }
 
 function attachIllustrations(node, illustrations) {
-  if (!illustrations?.length) return;
-  node.append(h('div', { class: 'illustrations' }, illustrations.map(illustrationFigure)));
+  const figures = (illustrations ?? []).map(illustrationFigure).filter(Boolean);
+  if (!figures.length) return;
+  node.append(h('div', { class: 'illustrations' }, figures));
   watchPendingIllustrations();
 }
 
@@ -49,7 +54,9 @@ export async function refreshIllustrations() {
     const visual = byKey.get(figure.dataset.key);
     if (visual && !figure.classList.contains(`status-${visual.image_status}`)) {
       const wasPending = figure.classList.contains('status-pending');
-      figure.replaceWith(illustrationFigure(visual));
+      const replacement = illustrationFigure(visual);
+      if (replacement) figure.replaceWith(replacement);
+      else figure.remove();
       if (wasPending && visual.image_status !== 'pending' && !notified.has(figure.dataset.key)) {
         notified.add(figure.dataset.key);
         notifyVisualFinished(visual);
@@ -540,6 +547,7 @@ async function playGmTurn(extraBody, playerNode = null) {
 
 async function sendMessage(event) {
   event.preventDefault();
+  stopDictation();
   const input = el('chat-input');
   const text = input.value.trim();
   const member = currentMember();
@@ -556,6 +564,8 @@ export async function initGame() {
   meta = await api('/characters/meta');
   initJumpButton();
   el('chat-form').addEventListener('submit', sendMessage);
+  // Microfone: fala vira texto na caixa, para revisar antes de enviar.
+  el('chat-send').before(micButton(el('chat-input'), { onError: (text) => showError(el('chat-error'), text) }) ?? '');
   el('chat-input').addEventListener('keydown', (event) => {
     if (event.key === 'Enter' && !event.shiftKey) el('chat-form').requestSubmit();
   });

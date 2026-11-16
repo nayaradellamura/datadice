@@ -2,7 +2,9 @@ import { api, h, session, showError } from './api.js';
 
 const el = (id) => document.getElementById(id);
 const number = (value) => Number(value ?? 0).toLocaleString('pt-BR');
-const date = (value) => new Date(`${value.replace(' ', 'T')}Z`).toLocaleDateString('pt-BR');
+// O banco devolve o horário em UTC sem o fuso ("2026-11-16 00:56:00"): sem o Z, o navegador leria como hora local.
+const serverTime = (value) => new Date(/[zZ]|[+-]\d\d:?\d\d$/.test(String(value)) ? value : `${String(value).replace(' ', 'T')}Z`);
+const date = (value) => serverTime(value).toLocaleDateString('pt-BR');
 
 function stat(label, value) {
   return h('div', { class: 'stat' }, h('b', {}, value), h('small', {}, label));
@@ -89,10 +91,10 @@ export async function refreshAdminBadge() {
 }
 
 const ago = (value) => {
-  const minutes = Math.max(0, Math.round((Date.now() - new Date(value).getTime()) / 60000));
+  const minutes = Math.max(0, Math.round((Date.now() - serverTime(value).getTime()) / 60000));
   if (minutes < 60) return minutes <= 1 ? 'agora há pouco' : `há ${minutes} min`;
   const hours = Math.round(minutes / 60);
-  return hours < 24 ? `há ${hours} h` : `em ${new Date(value).toLocaleDateString('pt-BR')}`;
+  return hours < 24 ? `há ${hours} h` : `em ${serverTime(value).toLocaleDateString('pt-BR')}`;
 };
 
 /** Pedidos de "Esqueci minha senha": gerar o link ou dispensar. */
@@ -172,7 +174,7 @@ async function makeResetLink(user) {
   }
 }
 
-const when = (value) => new Date(value).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+const when = (value) => serverTime(value).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 
 /**
  * Atividade: o que cada conta fez (criar ficha, importar PDF, entrar...) e o que deu erro.
